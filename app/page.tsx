@@ -471,8 +471,8 @@ export default function Home() {
 
   // ── Export MP3
   async function exportAudio() {
-    const summary = taskData?.summary;
-    if (!summary) { showToast("⚠️ No hay resumen para exportar"); return; }
+    const summary = scriptText.trim();
+    if (!summary) { showToast("⚠️ Escribí algo en el script primero"); return; }
     setExportLoading(true);
     const voiceKey = activeProfile?.voice || "female";
     const res = await fetch("/api/tts", {
@@ -833,23 +833,19 @@ export default function Home() {
                   className="script-editor"
                   value={scriptText}
                   onChange={(e) => setScriptText(e.target.value)}
-                  placeholder="El script generado aparecerá aquí para que puedas editarlo..."
+                  placeholder="Escribí o editá el texto que quierás convertir a audio..."
                 />
                 <button
                   className="btn-action btn-primary"
                   style={{ width: "100%", justifyContent: "center", marginTop: 10 }}
                   onClick={updatePizarra}
                 >↻ Actualizar pizarra</button>
-              </div>
-
-              <div className="panel-card">
-                <div className="panel-title">📋 Resumen del tema</div>
-                <div className="summary-text">{taskData.summary || "El resumen aparecerá aquí..."}</div>
                 <button
                   className="btn-action btn-green"
-                  style={{ width: "100%", justifyContent: "center", marginTop: 12 }}
+                  style={{ width: "100%", justifyContent: "center", marginTop: 8 }}
                   onClick={exportAudio}
-                >🎧 Exportar resumen como audio</button>
+                  disabled={exportLoading}
+                >🎧 {exportLoading ? "Generando..." : "Exportar script como audio"}</button>
               </div>
             </div>
           </div>
