@@ -46,6 +46,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(result);
     }
 
+    // ── PASO CLEAN: extraer solo texto impreso, ignorar trazos del niño
+    if (step === "clean") {
+      const message = await client.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 800,
+        messages: [{
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: { type: "base64", media_type: mimeType, data: imageBase64 },
+            },
+            {
+              type: "text",
+              text: `Esta imagen tiene texto impreso/oficial Y trazos o escritura hechos a mano por un niño (respuestas, líneas, marcas).
+Extraé ÚNICAMENTE el texto impreso original, ignorando completamente todo lo escrito o dibujado a mano por el niño.
+Conservá el formato y la estructura del documento original (títulos, numeración, columnas, etc.).
+Respondé SOLO con este JSON sin backticks:
+{"enunciado": "texto impreso original con su formato, sin nada escrito por el niño"}`,
+            },
+          ],
+        }],
+      });
+      const raw = message.content[0].type === "text" ? message.content[0].text : "";
+      const clean = raw.replace(/```json|```/g, "").trim();
+      return NextResponse.json(JSON.parse(clean));
+    }
+
     // ── PASO 1: extraer texto de la imagen
     if (!imageBase64 || !mimeType) {
       return NextResponse.json({ error: "Falta imagen" }, { status: 400 });

@@ -116,6 +116,7 @@ export default function Home() {
   const [libreText, setLibreText] = useState("");
   const [libreLoading, setLibreLoading] = useState(false);
   const [reviewLoading, setReviewLoading] = useState(false);
+  const [cleanLoading, setCleanLoading] = useState(false);
 
   // review screen
   const [reviewText, setReviewText] = useState("");
@@ -302,6 +303,33 @@ export default function Home() {
     setPan({ x: 0, y: 0 });
     setScreen("review");
     window.scrollTo(0, 0);
+  }
+
+  async function cleanTraces() {
+    if (!taskData?.imageData) return;
+    setCleanLoading(true);
+    try {
+      const base64 = taskData.imageData.split(",")[1];
+      const mimeType = taskData.imageData.split(";")[0].split(":")[1];
+      const res = await fetchWithRetry("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageBase64: base64,
+          mimeType,
+          step: "clean",
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setReviewText(data.enunciado || reviewText);
+        showToast("✅ Trazos eliminados");
+      }
+    } catch {
+      showToast("⚠️ No se pudo limpiar la imagen");
+    } finally {
+      setCleanLoading(false);
+    }
   }
 
   async function confirmReview() {
@@ -914,6 +942,16 @@ export default function Home() {
                   />
                 )}
               </div>
+              {taskData.imageData && (
+                <button
+                  className="btn-action btn-secondary"
+                  style={{ width: "100%", justifyContent: "center", marginTop: 10 }}
+                  onClick={cleanTraces}
+                  disabled={cleanLoading}
+                >
+                  {cleanLoading ? "⏳ Limpiando..." : "🧹 Limpiar trazos del niño"}
+                </button>
+              )}
             </div>
 
             {/* TEXTO EDITABLE */}
