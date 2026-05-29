@@ -32,7 +32,8 @@ interface TaskData {
   tags?: { text: string; css: string }[];
 }
 
-type Screen = "lock" | "home" | "processing" | "review" | "pizarra" | "libre";
+type Screen = "lock" | "home" | "processing" | "review" | "pizarra" | "libre" | "pedido";
+type AppMode = "copiar" | "reforzar" | "pedido" | null;
 
 const APP_PIN = "1234"; // ← cambiá esta clave
 
@@ -131,6 +132,14 @@ export default function Home() {
 
   // ── Tipografía pizarra ─────────────────────────────────
   const [useUppercase, setUseUppercase] = useState(false);
+
+  // ── Modo de la app ─────────────────────────────────────
+  const [appMode, setAppMode] = useState<AppMode>(null);
+
+  // ── Pedidos ────────────────────────────────────────────
+  const [pedidoText, setPedidoText] = useState("");
+  const [pedidoLoading, setPedidoLoading] = useState(false);
+  const [pedidoResult, setPedidoResult] = useState<{ html?: string; imageBase64?: string; mimeType?: string; text?: string } | null>(null);
 
   // review screen
   const [reviewText, setReviewText] = useState("");
@@ -873,77 +882,158 @@ export default function Home() {
       {/* ══ HOME ══ */}
       {screen === "home" && (
         <div id="home">
-          <div className="hero">
-            <h1>Tu tarea,<br /><span>clara y simple.</span></h1>
-            <p>Subí la foto de la tarea y Aprend·IA la convierte en una pizarra lista para aprender.</p>
+
+          {/* Perfil activo */}
+          <div style={{ textAlign: "center", marginBottom: 8 }}>
+            <p className="section-title" style={{ marginBottom: 6 }}>¿Para quién es la tarea?</p>
+            <div className="profiles-row" style={{ justifyContent: "center" }}>
+              {profiles.map((p) => {
+                const emoji = p.themeEmoji || THEME_EMOJIS[p.theme] || "👤";
+                return (
+                  <div
+                    key={p.name}
+                    className={`profile-chip${activeProfile?.name === p.name ? " active" : ""}`}
+                    onClick={() => setActiveProfile(p)}
+                    style={{ position: "relative", paddingRight: 28 }}
+                  >
+                    <span className="chip-emoji">{emoji}</span>{p.name}
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!confirm(`¿Borrar a ${p.name}?`)) return;
+                        const updated = profiles.filter(x => x.name !== p.name);
+                        setProfiles(updated);
+                        localStorage.setItem("aprendia_profiles", JSON.stringify(updated));
+                        if (activeProfile?.name === p.name) setActiveProfile(updated[0] || null);
+                      }}
+                      style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 11, opacity: 0.5, cursor: "pointer", lineHeight: 1 }}
+                    >✕</span>
+                  </div>
+                );
+              })}
+              <button className="btn-add-profile" onClick={() => setModalOpen(true)}>+ Agregar niño</button>
+            </div>
           </div>
 
-          {/* Upload */}
-          <div
-            className="upload-zone"
-            onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("dragover"); }}
-            onDragLeave={(e) => e.currentTarget.classList.remove("dragover")}
-            onDrop={(e) => { e.currentTarget.classList.remove("dragover"); handleDrop(e); }}
-          >
-            <input type="file" accept="image/*" onChange={handleFile} />
-            <span className="upload-icon">📸</span>
-            <h2>Subí la foto de la tarea</h2>
-            <p>Fotocopia del profe, hoja del compañero, o cualquier tarea manuscrita</p>
-          </div>
+          {/* ── SELECTOR DE MODO (sin modo elegido) ── */}
+          {!appMode && (
+            <div style={{ maxWidth: 680, margin: "0 auto", padding: "8px 20px 32px" }}>
+              <div style={{ textAlign: "center", marginBottom: 28 }}>
+                <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, color: "var(--ink)", marginBottom: 6 }}>
+                  ¿Qué necesitás hoy{activeProfile ? `, ${activeProfile.name}` : ""}?
+                </h1>
+                <p style={{ color: "#888", fontSize: 15 }}>Elegí una opción para empezar</p>
+              </div>
 
-          {/* Pizarra libre */}
-          <div style={{ textAlign: "center", margin: "16px 0 8px" }}>
-            <button
-              className="btn-action btn-secondary"
-              style={{ fontSize: 15, padding: "12px 28px", borderRadius: 30 }}
-              onClick={() => { setLibreText(""); setScreen("libre"); }}
-            >
-              ✏️ Pizarra libre — escribir sin foto
-            </button>
-          </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-          {/* Ir directo a la pizarra */}
-          {taskData && (
-            <div style={{ textAlign: "center", marginBottom: 24 }}>
-              <button
-                className="btn-action btn-primary"
-                style={{ fontSize: 16, padding: "12px 32px" }}
-                onClick={() => { stopAudio(); setScreen("pizarra"); }}
-              >
-                📋 Volver a la pizarra anterior
-              </button>
+                {/* Modo 1: Copiar tarea */}
+                <button
+                  onClick={() => setAppMode("copiar")}
+                  style={{ background: "#fff", border: "2px solid var(--border)", borderRadius: 20, padding: "20px 24px", textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", gap: 18, boxShadow: "0 4px 16px rgba(44,38,71,.07)", transition: "transform .15s, box-shadow .15s" }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(44,38,71,.12)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 16px rgba(44,38,71,.07)"; }}
+                >
+                  <div style={{ fontSize: 44, lineHeight: 1 }}>📋</div>
+                  <div>
+                    <div style={{ fontFamily: "var(--font-display)", fontSize: 19, color: "var(--primary)", fontWeight: 700, marginBottom: 3 }}>Copiar tarea</div>
+                    <div style={{ fontSize: 14, color: "#666", lineHeight: 1.4 }}>No fui a clase hoy. Sacá la foto del cuaderno del compañero o la fotocopia del profe y generá una copia limpia lista para completar.</div>
+                  </div>
+                </button>
+
+                {/* Modo 2: Reforzar tema */}
+                <button
+                  onClick={() => setAppMode("reforzar")}
+                  style={{ background: "#fff", border: "2px solid var(--border)", borderRadius: 20, padding: "20px 24px", textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", gap: 18, boxShadow: "0 4px 16px rgba(44,38,71,.07)", transition: "transform .15s, box-shadow .15s" }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(44,38,71,.12)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 16px rgba(44,38,71,.07)"; }}
+                >
+                  <div style={{ fontSize: 44, lineHeight: 1 }}>🧠</div>
+                  <div>
+                    <div style={{ fontFamily: "var(--font-display)", fontSize: 19, color: "var(--sky)", fontWeight: 700, marginBottom: 3 }}>Reforzar un tema</div>
+                    <div style={{ fontSize: 14, color: "#666", lineHeight: 1.4 }}>Subí la foto de una tarea o escribí el tema. Aprend·IA genera la explicación y actividades extra personalizadas para {activeProfile?.name || "el niño"}.</div>
+                  </div>
+                </button>
+
+                {/* Modo 3: Resolver pedidos */}
+                <button
+                  onClick={() => { setAppMode("pedido"); setScreen("pedido"); }}
+                  style={{ background: "linear-gradient(135deg, #f8f4ff 0%, #fff4f9 100%)", border: "2px solid #e8d5ff", borderRadius: 20, padding: "20px 24px", textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", gap: 18, boxShadow: "0 4px 16px rgba(44,38,71,.07)", transition: "transform .15s, box-shadow .15s" }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(44,38,71,.12)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 16px rgba(44,38,71,.07)"; }}
+                >
+                  <div style={{ fontSize: 44, lineHeight: 1 }}>✨</div>
+                  <div>
+                    <div style={{ fontFamily: "var(--font-display)", fontSize: 19, color: "#9b59b6", fontWeight: 700, marginBottom: 3 }}>Resolver un pedido</div>
+                    <div style={{ fontSize: 14, color: "#666", lineHeight: 1.4 }}>Pedile lo que necesitás: "Dame una lámina del sistema solar", "Creá ejercicios de suma para 2° grado", "Sopa de letras de animales"...</div>
+                  </div>
+                </button>
+              </div>
+
+              {/* Volver a pizarra anterior */}
+              {taskData && (
+                <div style={{ textAlign: "center", marginTop: 20 }}>
+                  <button className="btn-action btn-secondary" style={{ fontSize: 14 }} onClick={() => { stopAudio(); setScreen("pizarra"); }}>
+                    📋 Volver a la pizarra anterior
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Profiles */}
-          <p className="section-title">¿Para quién es la tarea?</p>
-          <div className="profiles-row">
-            {profiles.map((p) => {
-              const emoji = p.themeEmoji || THEME_EMOJIS[p.theme] || "👤";
-              return (
-                <div
-                  key={p.name}
-                  className={`profile-chip${activeProfile?.name === p.name ? " active" : ""}`}
-                  onClick={() => setActiveProfile(p)}
-                  style={{ position: "relative", paddingRight: 28 }}
-                >
-                  <span className="chip-emoji">{emoji}</span>{p.name}
-                  <span
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!confirm(`¿Borrar a ${p.name}?`)) return;
-                      const updated = profiles.filter(x => x.name !== p.name);
-                      setProfiles(updated);
-                      localStorage.setItem("aprendia_profiles", JSON.stringify(updated));
-                      if (activeProfile?.name === p.name) setActiveProfile(updated[0] || null);
-                    }}
-                    style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 11, opacity: 0.5, cursor: "pointer", lineHeight: 1 }}
-                  >✕</span>
-                </div>
-              );
-            })}
-            <button className="btn-add-profile" onClick={() => setModalOpen(true)}>+ Agregar niño</button>
-          </div>
+          {/* ── MODO COPIAR TAREA ── */}
+          {appMode === "copiar" && (
+            <div style={{ maxWidth: 560, margin: "0 auto", padding: "0 20px 32px" }}>
+              <button className="btn-back" style={{ marginBottom: 16 }} onClick={() => setAppMode(null)}>← Volver</button>
+              <h2 style={{ fontFamily: "var(--font-display)", color: "var(--primary)", fontSize: 22, marginBottom: 4 }}>📋 Copiar tarea</h2>
+              <p style={{ color: "#888", fontSize: 14, marginBottom: 20 }}>Sacá la foto del cuaderno de un compañero o la fotocopia del profe.</p>
+              <div
+                className="upload-zone"
+                onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("dragover"); }}
+                onDragLeave={(e) => e.currentTarget.classList.remove("dragover")}
+                onDrop={(e) => { e.currentTarget.classList.remove("dragover"); handleDrop(e); }}
+              >
+                <input type="file" accept="image/*" onChange={handleFile} />
+                <span className="upload-icon">📸</span>
+                <h2>Subí la foto de la tarea</h2>
+                <p>Cuaderno del compañero, fotocopia del profe, o hoja suelta</p>
+              </div>
+              <div style={{ background: "#e8f8f0", border: "1px solid #a8e6c0", borderRadius: 12, padding: "10px 14px", marginTop: 14, fontSize: 13, color: "#2d7a50" }}>
+                💡 Después de analizar la foto vas a poder <strong>descargar la actividad original limpia</strong> lista para completar.
+              </div>
+            </div>
+          )}
+
+          {/* ── MODO REFORZAR TEMA ── */}
+          {appMode === "reforzar" && (
+            <div style={{ maxWidth: 560, margin: "0 auto", padding: "0 20px 32px" }}>
+              <button className="btn-back" style={{ marginBottom: 16 }} onClick={() => setAppMode(null)}>← Volver</button>
+              <h2 style={{ fontFamily: "var(--font-display)", color: "var(--sky)", fontSize: 22, marginBottom: 4 }}>🧠 Reforzar un tema</h2>
+              <p style={{ color: "#888", fontSize: 14, marginBottom: 20 }}>Subí una foto de la tarea o escribí el tema directamente.</p>
+              <div
+                className="upload-zone"
+                onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("dragover"); }}
+                onDragLeave={(e) => e.currentTarget.classList.remove("dragover")}
+                onDrop={(e) => { e.currentTarget.classList.remove("dragover"); handleDrop(e); }}
+              >
+                <input type="file" accept="image/*" onChange={handleFile} />
+                <span className="upload-icon">📷</span>
+                <h2>Subí la foto de la tarea</h2>
+                <p>O usá la opción de texto abajo</p>
+              </div>
+              <div style={{ textAlign: "center", margin: "14px 0 6px", color: "#aaa", fontWeight: 600, fontSize: 13 }}>— o bien —</div>
+              <button
+                className="btn-action btn-secondary"
+                style={{ width: "100%", justifyContent: "center", fontSize: 15, padding: "14px" }}
+                onClick={() => { setLibreText(""); setScreen("libre"); }}
+              >
+                ✏️ Escribir el tema directamente
+              </button>
+              <div style={{ background: "#e8f0ff", border: "1px solid #b3c6ff", borderRadius: 12, padding: "10px 14px", marginTop: 14, fontSize: 13, color: "#2d4db5" }}>
+                💡 Vas a poder generar una <strong>explicación personalizada</strong> y una <strong>actividad extra para colorear</strong> basada en los gustos de {activeProfile?.name || "el niño"}.
+              </div>
+            </div>
+          )}
 
         </div>
       )}
@@ -963,6 +1053,106 @@ export default function Home() {
               <li id="step5"><div className="step-icon">✨</div>Preparando la pizarra...</li>
             </ul>
           </div>
+        </div>
+      )}
+
+      {/* ══ PEDIDOS ══ */}
+      {screen === "pedido" && (
+        <div style={{ maxWidth: 680, margin: "0 auto", padding: "40px 24px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+            <button className="btn-back" onClick={() => { setScreen("home"); setAppMode(null); setPedidoResult(null); }}>← Volver</button>
+            <h2 style={{ fontFamily: "var(--font-display)", color: "#9b59b6", fontSize: 24, margin: 0 }}>✨ Resolver un pedido</h2>
+          </div>
+
+          <p style={{ color: "#666", fontSize: 15, marginBottom: 16 }}>
+            Escribí lo que necesitás y Aprend·IA lo genera para {activeProfile?.name || "vos"}.
+          </p>
+
+          {/* Ejemplos */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+            {[
+              "Dame una lámina del sistema solar",
+              `Ejercicios de suma para ${activeProfile?.grade || 2}° grado`,
+              "Sopa de letras con nombres de animales",
+              "Una historia corta sobre dinosaurios",
+              `Tabla del ${Math.floor(Math.random()*8)+2} para practicar`,
+            ].map(ex => (
+              <button key={ex} onClick={() => setPedidoText(ex)}
+                style={{ background: "#f3eaff", border: "1px solid #d8b4ff", borderRadius: 20, padding: "6px 14px", fontSize: 13, color: "#7b2eb0", cursor: "pointer" }}>
+                {ex}
+              </button>
+            ))}
+          </div>
+
+          <textarea
+            style={{ width: "100%", minHeight: 120, padding: "14px 16px", borderRadius: 16, border: "2px solid var(--border)", fontSize: 15, fontFamily: "var(--font-body)", resize: "vertical", boxSizing: "border-box" }}
+            placeholder={`Ej: "Dame una lámina sobre las plantas para ${activeProfile?.grade || 2}° grado de ${activeProfile?.country || "Argentina"}"...`}
+            value={pedidoText}
+            onChange={e => setPedidoText(e.target.value)}
+          />
+
+          <button
+            className="btn-action btn-primary"
+            style={{ width: "100%", justifyContent: "center", fontSize: 16, padding: "14px", marginTop: 12 }}
+            disabled={pedidoLoading || !pedidoText.trim()}
+            onClick={async () => {
+              if (!pedidoText.trim()) return;
+              setPedidoLoading(true);
+              setPedidoResult(null);
+              try {
+                const res = await fetch("/api/pedido", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    pedido: pedidoText,
+                    childName: activeProfile?.name || "",
+                    childAge: activeProfile?.age || 8,
+                    childGrade: activeProfile?.grade || 1,
+                    childTheme: activeProfile?.themeLabel || "",
+                    childCountry: activeProfile?.country || "Argentina",
+                  }),
+                });
+                if (res.ok) {
+                  const data = await res.json();
+                  setPedidoResult(data);
+                } else {
+                  showToast("⚠️ No se pudo generar el pedido");
+                }
+              } catch { showToast("⚠️ Error al procesar el pedido"); }
+              finally { setPedidoLoading(false); }
+            }}
+          >
+            {pedidoLoading ? "⏳ Generando..." : "✨ Generar"}
+          </button>
+
+          {/* Resultado */}
+          {pedidoResult && (
+            <div style={{ marginTop: 24, border: "2px solid #d8b4ff", borderRadius: 20, overflow: "hidden" }}>
+              <div style={{ background: "linear-gradient(135deg, #9b59b6, #e91e8c)", padding: "12px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ color: "#fff", fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 15 }}>✨ Tu pedido está listo</span>
+                {pedidoResult.imageBase64 && (
+                  <a href={`data:${pedidoResult.mimeType || "image/png"};base64,${pedidoResult.imageBase64}`} download="pedido-aprendia.jpg"
+                    style={{ background: "rgba(255,255,255,.25)", borderRadius: 20, padding: "5px 14px", color: "#fff", fontWeight: 700, fontSize: 13, textDecoration: "none" }}>
+                    ⬇️ Descargar JPG
+                  </a>
+                )}
+              </div>
+              {pedidoResult.imageBase64 && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={`data:${pedidoResult.mimeType || "image/png"};base64,${pedidoResult.imageBase64}`} alt="Pedido generado" style={{ width: "100%", display: "block" }} />
+              )}
+              {pedidoResult.html && (
+                <div style={{ background: "#fff", padding: 0 }}>
+                  <iframe srcDoc={pedidoResult.html} style={{ width: "100%", minHeight: 500, border: "none" }} title="Pedido" />
+                </div>
+              )}
+              {pedidoResult.text && !pedidoResult.html && !pedidoResult.imageBase64 && (
+                <div style={{ background: "#fff", padding: "20px 24px", fontSize: 15, lineHeight: 1.7, color: "#333", whiteSpace: "pre-wrap" }}>
+                  {pedidoResult.text}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
