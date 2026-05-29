@@ -111,6 +111,7 @@ export default function Home() {
   // pizarra libre
   const [libreText, setLibreText] = useState("");
   const [libreLoading, setLibreLoading] = useState(false);
+  const [reviewLoading, setReviewLoading] = useState(false);
 
   // review screen
   const [reviewText, setReviewText] = useState("");
@@ -257,6 +258,8 @@ export default function Home() {
       if (!res.ok) throw new Error("analyze failed");
       const result: TaskData = await res.json();
       result.imageData = imageData;
+      result.script = ""; // se genera después de la revisión
+      result.summary = "";
       showReview(result);
     } catch (err) {
       console.error(err);
@@ -283,10 +286,30 @@ export default function Home() {
     window.scrollTo(0, 0);
   }
 
-  function confirmReview() {
+  async function confirmReview() {
     if (!taskData) return;
-    const updated = { ...taskData, enunciado: reviewText, text: reviewText };
-    showPizarra(updated);
+    setReviewLoading(true);
+    // Primero actualiza el texto con la corrección de la mamá
+    const base = { ...taskData, enunciado: reviewText, text: reviewText };
+    // Luego genera script y summary desde el texto corregido
+    try {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          step: "script",
+          enunciado: reviewText,
+          childAge: activeProfile?.age || 8,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        showPizarra({ ...base, script: data.script, summary: data.summary, extraActivity: data.extraActivity });
+        return;
+      }
+    } catch { /* fallback */ }
+    setReviewLoading(false);
+    showPizarra(base);
   }
 
   async function generateFromText() {
@@ -786,8 +809,9 @@ export default function Home() {
                 className="btn-action btn-primary"
                 style={{ width: "100%", justifyContent: "center", marginTop: 16, fontSize: 16, padding: "14px" }}
                 onClick={confirmReview}
+              disabled={reviewLoading}
               >
-                ✅ Confirmar y ver pizarra
+                {reviewLoading ? "⏳ Generando script..." : "✅ Confirmar y ver pizarra"}
               </button>
             </div>
           </div>
