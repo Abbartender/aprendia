@@ -978,9 +978,9 @@ export default function Home() {
                     <span style={{ color: "#fff", fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13 }}>✅ Imagen limpia</span>
                     <a
                       href={cleanedImage}
-                      download="tarea-limpia.png"
+                      download="tarea-limpia.jpg"
                       style={{ background: "rgba(255,255,255,.25)", borderRadius: 20, padding: "5px 12px", color: "#fff", fontWeight: 700, fontSize: 12, textDecoration: "none" }}
-                    >⬇️ Descargar imagen</a>
+                    >⬇️ Descargar JPG</a>
                   </div>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={cleanedImage} alt="Tarea limpia" style={{ width: "100%", display: "block" }} />
