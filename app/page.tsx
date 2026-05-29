@@ -313,30 +313,40 @@ export default function Home() {
     setCleanedImage(null);
     setCleanedHtml(null);
     try {
-      const base64 = taskData.imageData.split(",")[1];
-      const mimeType = taskData.imageData.split(";")[0].split(":")[1];
-
-      // Intentar con Gemini primero (imagen real limpia)
-      const res = await fetch("/api/clean", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64: base64, mimeType }),
+      // Procesamiento local con Canvas: elimina píxeles grises (trazos de lápiz)
+      // El lápiz es gris medio (R,G,B entre 60-210 y similares entre sí)
+      // El fondo es blanco (>220) y el texto impreso es negro (<60)
+      const result = await new Promise<string>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) { reject(new Error("no canvas")); return; }
+          ctx.drawImage(img, 0, 0);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const d = imageData.data;
+          for (let i = 0; i < d.length; i += 4) {
+            const r = d[i], g = d[i+1], b = d[i+2];
+            const brightness = (r + g + b) / 3;
+            const maxC = Math.max(r, g, b);
+            const minC = Math.min(r, g, b);
+            const saturation = maxC - minC; // bajo = gris, alto = color
+            // Si es gris medio (lápiz): brightness entre 60-215 y baja saturación
+            if (brightness > 60 && brightness < 215 && saturation < 40) {
+              // Convertir a blanco
+              d[i] = 255; d[i+1] = 255; d[i+2] = 255;
+            }
+          }
+          ctx.putImageData(imageData, 0, 0);
+          resolve(canvas.toDataURL("image/jpeg", 0.92));
+        };
+        img.onerror = reject;
+        img.src = taskData.imageData!;
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.imageBase64) {
-          setCleanedImage(`data:${data.mimeType || "image/png"};base64,${data.imageBase64}`);
-          showToast("✅ Imagen limpia lista para descargar");
-          return;
-        }
-      }
-
-      // Si Gemini falla, mostramos el error real
-      const errData = await res.json().catch(() => ({}));
-      console.error("[cleanTraces] Gemini failed:", errData);
-      const detail = errData.details?.[0] || errData.error || "error desconocido";
-      showToast(`⚠️ ${detail.slice(0, 120)}`);
+      setCleanedImage(result);
+      showToast("✅ Imagen limpia lista para descargar");
     } catch {
       showToast("⚠️ No se pudo limpiar");
     } finally {
