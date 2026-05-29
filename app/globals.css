@@ -838,3 +838,4 @@ nav {
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+/* force rebuild Thu May 28 23:42:39 CST 2026 */
