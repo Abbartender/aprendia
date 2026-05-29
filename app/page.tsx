@@ -332,10 +332,12 @@ export default function Home() {
             const brightness = (r + g + b) / 3;
             const maxC = Math.max(r, g, b);
             const minC = Math.min(r, g, b);
-            const saturation = maxC - minC; // bajo = gris, alto = color
-            // Si es gris medio (lápiz): brightness entre 60-215 y baja saturación
-            if (brightness > 60 && brightness < 215 && saturation < 40) {
-              // Convertir a blanco
+            const saturation = maxC - minC;
+            // Lápiz sobre papel: gris claro/medio, canales muy similares entre sí
+            // brightness 110-220 = zona de lápiz sobre papel blanco
+            // saturation < 20 = neutro (no madera marrón, no color)
+            // Excluimos zonas muy oscuras (texto impreso, madera) y muy claras (fondo)
+            if (brightness > 110 && brightness < 220 && saturation < 20) {
               d[i] = 255; d[i+1] = 255; d[i+2] = 255;
             }
           }
