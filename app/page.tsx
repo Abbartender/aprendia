@@ -822,8 +822,20 @@ export default function Home() {
               <div className="blackboard">
                 <div className="blackboard-frame" />
                 <div className="blackboard-content">
-                  <div className="bb-subject">{taskData.subject}</div>
-                  <div className="bb-title">{taskData.title}</div>
+                  <div
+                    className="bb-subject"
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={(e) => setTaskData(d => d ? { ...d, subject: e.currentTarget.innerText } : d)}
+                    style={{ outline: "none", cursor: "text" }}
+                  >{taskData.subject}</div>
+                  <div
+                    className="bb-title"
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={(e) => setTaskData(d => d ? { ...d, title: e.currentTarget.innerText } : d)}
+                    style={{ outline: "none", cursor: "text" }}
+                  >{taskData.title}</div>
                   <div className="bb-divider" />
                   <div
                     className="bb-text"
