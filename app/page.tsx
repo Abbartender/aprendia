@@ -1017,14 +1017,16 @@ export default function Home() {
                 onChange={(e) => setReviewText(e.target.value)}
                 placeholder="El texto detectado aparece aquí..."
               />
-              <button
-                className="btn-action btn-primary"
-                style={{ width: "100%", justifyContent: "center", marginTop: 16, fontSize: 16, padding: "14px" }}
-                onClick={confirmReview}
-              disabled={reviewLoading}
-              >
-                {reviewLoading ? "⏳ Generando script..." : "✅ Confirmar y ver pizarra"}
-              </button>
+              <div style={{ position: "sticky", bottom: 0, background: "var(--surface)", paddingTop: 12, marginTop: 12 }}>
+                <button
+                  className="btn-action btn-primary"
+                  style={{ width: "100%", justifyContent: "center", fontSize: 16, padding: "14px" }}
+                  onClick={confirmReview}
+                  disabled={reviewLoading}
+                >
+                  {reviewLoading ? "⏳ Generando script..." : "✅ Confirmar y ver pizarra"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
