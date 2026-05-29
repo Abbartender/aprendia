@@ -7,6 +7,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 interface Profile {
   name: string;
   age: number;
+  grade: number; // grado escolar (1-7)
   theme: string;
   themeLabel: string;
   themeEmoji: string;
@@ -139,6 +140,7 @@ export default function Home() {
   // profile form
   const [formName, setFormName] = useState("");
   const [formAge, setFormAge] = useState("");
+  const [formGrade, setFormGrade] = useState("1");
   const [formTheme, setFormTheme] = useState("dinos");
   const [formVoice, setFormVoice] = useState<"female" | "male">("female");
   const [customEmoji, setCustomEmoji] = useState("");
@@ -161,6 +163,26 @@ export default function Home() {
     }
   }, []);
 
+  // ── Pre-cargar formulario con perfil activo cuando se abre el modal
+  useEffect(() => {
+    if (modalOpen && activeProfile) {
+      setFormName(activeProfile.name);
+      setFormAge(String(activeProfile.age));
+      setFormGrade(String(activeProfile.grade || 1));
+      setFormVoice(activeProfile.voice);
+      if (activeProfile.theme === "__custom__") {
+        setIsCustomTheme(true);
+        setCustomTheme(activeProfile.themeLabel);
+        setCustomEmoji(activeProfile.themeEmoji);
+      } else {
+        setIsCustomTheme(false);
+        setFormTheme(activeProfile.theme);
+      }
+    } else if (modalOpen && !activeProfile) {
+      setFormName(""); setFormAge(""); setFormGrade("1");
+    }
+  }, [modalOpen, activeProfile]);
+
   // ── Toast
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -176,6 +198,7 @@ export default function Home() {
     const profile: Profile = {
       name: formName.trim(),
       age: parseInt(formAge) || 8,
+      grade: parseInt(formGrade) || 1,
       theme: isCustomTheme ? "__custom__" : formTheme,
       themeLabel,
       themeEmoji,
@@ -368,6 +391,9 @@ export default function Home() {
           step: "script",
           enunciado: reviewText,
           childAge: activeProfile?.age || 8,
+          childGrade: activeProfile?.grade || 1,
+          childName: activeProfile?.name || "el niño",
+          childTheme: activeProfile?.themeLabel || "",
         }),
       });
       if (res.ok) {
@@ -589,6 +615,11 @@ export default function Home() {
           subject: taskData.subject,
           title: taskData.title,
           enunciado: taskData.enunciado,
+          childName: activeProfile?.name || "el niño",
+          childAge: activeProfile?.age || 8,
+          childGrade: activeProfile?.grade || 1,
+          childTheme: activeProfile?.themeLabel || "",
+          childThemeEmoji: activeProfile?.themeEmoji || "⭐",
         }),
       });
       if (res.ok) {
@@ -1310,9 +1341,24 @@ export default function Home() {
               <input type="text" placeholder="Ej: Tomás" maxLength={20} value={formName} onChange={(e) => setFormName(e.target.value)} />
             </div>
 
-            <div className="form-group">
-              <label>Edad</label>
-              <input type="number" placeholder="Ej: 8" min={4} max={16} value={formAge} onChange={(e) => setFormAge(e.target.value)} />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="form-group">
+                <label>Edad</label>
+                <input type="number" placeholder="Ej: 8" min={4} max={16} value={formAge} onChange={(e) => setFormAge(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label>Grado escolar</label>
+                <select value={formGrade} onChange={(e) => setFormGrade(e.target.value)}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: 12, border: "2px solid var(--border)", fontSize: 15, background: "var(--surface)", color: "var(--text)" }}>
+                  <option value="1">1° grado</option>
+                  <option value="2">2° grado</option>
+                  <option value="3">3° grado</option>
+                  <option value="4">4° grado</option>
+                  <option value="5">5° grado</option>
+                  <option value="6">6° grado</option>
+                  <option value="7">7° grado</option>
+                </select>
+              </div>
             </div>
 
             <div className="form-group">

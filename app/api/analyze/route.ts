@@ -13,22 +13,26 @@ const EXTRACT_PROMPT = `Analizá esta imagen de tarea escolar y respondé SOLO c
 }`;
 
 // ── PASO 2: genera script pedagógico desde el texto ya corregido por la mamá
-const SCRIPT_PROMPT = (enunciado: string, childAge: number) =>
+const SCRIPT_PROMPT = (enunciado: string, childAge: number, childGrade?: number, childName?: string, childTheme?: string) =>
   `Sos un asistente educativo para niños de primaria en Argentina.
 La mamá o papá ya revisó y corrigió este enunciado de tarea:
 
 "${enunciado}"
 
-El niño tiene ${childAge} años. Respondé SOLO con este JSON exacto, sin backticks:
+El niño se llama ${childName || "el niño"}, tiene ${childAge} años y está en ${childGrade ? `${childGrade}° grado` : "primaria"}.${childTheme ? ` Le encanta el tema: ${childTheme}.` : ""}
+
+Modulá el contenido, vocabulario y ejemplos al nivel de ${childGrade ? `${childGrade}° grado` : "primaria"}.${childTheme ? ` Podés usar ejemplos o referencias a ${childTheme} para hacer la explicación más cercana.` : ""}
+
+Respondé SOLO con este JSON exacto, sin backticks:
 {
-  "script": "explicación pedagógica simple del tema en 3-4 oraciones, para leer en voz alta al niño. Tono cálido y simple, como si hablaras con el niño.",
+  "script": "explicación pedagógica simple del tema en 3-4 oraciones, para leer en voz alta al niño. Tono cálido y simple, dirigite a ${childName || "el niño"} por su nombre.",
   "summary": "resumen muy simple de 2-3 oraciones sobre el tema, para que el niño escuche camino a la escuela.",
-  "extraActivity": "una actividad extra corta y divertida relacionada con el tema"
+  "extraActivity": "una actividad extra corta y divertida relacionada con el tema, apropiada para ${childGrade ? `${childGrade}° grado` : "su edad"}"
 }`;
 
 export async function POST(req: NextRequest) {
   try {
-    const { imageBase64, mimeType, step, enunciado, childAge } = await req.json();
+    const { imageBase64, mimeType, step, enunciado, childAge, childGrade, childName, childTheme } = await req.json();
 
     // ── PASO 2: generar script desde texto corregido
     if (step === "script") {
@@ -37,7 +41,7 @@ export async function POST(req: NextRequest) {
       const message = await client.messages.create({
         model: "claude-sonnet-4-20250514",
         max_tokens: 600,
-        messages: [{ role: "user", content: SCRIPT_PROMPT(enunciado, childAge || 8) }],
+        messages: [{ role: "user", content: SCRIPT_PROMPT(enunciado, childAge || 8, childGrade, childName, childTheme) }],
       });
 
       const raw = message.content[0].type === "text" ? message.content[0].text : "";

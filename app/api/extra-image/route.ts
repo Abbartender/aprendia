@@ -8,26 +8,34 @@ const MODELS = [
 
 export async function POST(req: NextRequest) {
   try {
-    const { imageBase64, mimeType, subject, title, enunciado } = await req.json();
+    const { imageBase64, mimeType, subject, title, enunciado, childName, childAge, childGrade, childTheme, childThemeEmoji } = await req.json();
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
       return NextResponse.json({ error: "Gemini no configurado" }, { status: 503 });
     }
 
-    const prompt = `Create a fun coloring page activity for a primary school child based on this school worksheet about "${title}" (subject: ${subject}).
+    const gradeText = childGrade ? `${childGrade}° grado de primaria` : "primaria";
+    const themeText = childTheme ? `Le encanta el tema: ${childTheme} ${childThemeEmoji || ""}.` : "";
 
-The coloring page should:
-- Have simple, thick outlines in black and white — easy to color with crayons
-- Be visually similar in style and layout to the original worksheet (same type of activity, same visual elements)
-- Include the same type of content: ${enunciado || title}
-- Have clear empty spaces for the child to color
-- Look like a hand-drawn illustration, not a photo
-- Be child-friendly, fun, and engaging
-- Include a simple title at the top
-- NO handwriting to remove — this is a NEW clean coloring sheet
+    const prompt = `Create a personalized coloring page activity for ${childName || "a child"}, ${childAge || 8} years old, in ${gradeText}.
+${themeText}
 
-Output a black and white coloring page image, ready to print and color.`;
+The activity is based on a school worksheet about "${title}" (subject: ${subject}).
+Task description: ${enunciado || title}
+
+Requirements for the coloring page:
+- Black and white only, thick simple outlines easy to color with crayons
+- Difficulty level appropriate for ${gradeText}
+- Same type of activity and visual structure as the original worksheet
+- If the child has a favorite theme (${childTheme || "general"}), subtly incorporate it in the decorative elements
+- Child-friendly, fun, engaging illustrations
+- Clear empty spaces to color
+- Simple title at the top mentioning the activity
+- Look like a printable school activity sheet
+- NO text answers — only visual content to color and complete
+
+Output a clean black and white coloring page, ready to print.`;
 
     const parts: object[] = [];
 
