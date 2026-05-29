@@ -104,6 +104,7 @@ export default function Home() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playBtnLabel, setPlayBtnLabel] = useState("▶");
   const [audioProgress, setAudioProgress] = useState(0);
+  const [playbackRate, setPlaybackRate] = useState(0.8);
   const [exportLoading, setExportLoading] = useState(false);
   const [processingFor, setProcessingFor] = useState("el niño");
 
@@ -389,6 +390,7 @@ export default function Home() {
       URL.revokeObjectURL(url);
     });
 
+    audio.playbackRate = playbackRate;
     audio.play();
     setIsPlaying(true);
     setPlayBtnLabel("⏸");
@@ -765,6 +767,26 @@ export default function Home() {
                       <div className="audio-progress">
                         <div className="audio-progress-fill" style={{ width: `${audioProgress}%` }} />
                       </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {[0.6, 0.8, 1.0].map((r) => (
+                        <button
+                          key={r}
+                          onClick={() => setPlaybackRate(r)}
+                          style={{
+                            padding: "4px 8px",
+                            borderRadius: 20,
+                            border: "none",
+                            background: playbackRate === r ? "var(--primary)" : "rgba(255,255,255,0.15)",
+                            color: "white",
+                            fontSize: 11,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                          }}
+                        >
+                          {r === 0.6 ? "🐢" : r === 0.8 ? "normal" : "rápido"}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
