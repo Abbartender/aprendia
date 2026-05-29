@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const ELEVEN_VOICES: Record<string, string> = {
-  female: "onwK4e9ZLuTAKqWW03F9", // Domi — nativa español latinoamericano
-  male:   "AZnzlk1XvdvUeBnXmlld", // Fin — multilingual con acento neutro
+  female: "XB0fDUnXU5powFXDhCwa", // Charlotte — multilingual, neutro
+  male:   "iP95p4xoKVk53GoZ742B", // Chris — multilingual, neutro
 };
 
 const ELEVEN_MODEL = "eleven_multilingual_v2";
@@ -32,10 +32,11 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           text,
           model_id: ELEVEN_MODEL,
+          language_code: "es",
           voice_settings: {
-            stability: 0.55,
-            similarity_boost: 0.8,
-            style: 0.3,
+            stability: 0.65,
+            similarity_boost: 0.75,
+            style: 0.2,
             use_speaker_boost: true,
           },
         }),
