@@ -103,6 +103,9 @@ export default function Home() {
   const [pizarraText, setPizarraText] = useState("");
   const [extraText, setExtraText] = useState("");
   const [showExtra, setShowExtra] = useState(false);
+  const [extraMode, setExtraMode] = useState<"text" | "image">("text");
+  const [extraImage, setExtraImage] = useState<string | null>(null);
+  const [extraImageLoading, setExtraImageLoading] = useState(false);
   const [toast, setToast] = useState("");
   const [toastVisible, setToastVisible] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -569,6 +572,40 @@ export default function Home() {
   }
 
   // ── Extra activity
+  async function generateExtraImage() {
+    if (!taskData) return;
+    setExtraImageLoading(true);
+    setExtraImage(null);
+    setShowExtra(true);
+    try {
+      const base64 = taskData.imageData ? taskData.imageData.split(",")[1] : null;
+      const mimeType = taskData.imageData ? taskData.imageData.split(";")[0].split(":")[1] : null;
+      const res = await fetch("/api/extra-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageBase64: base64,
+          mimeType,
+          subject: taskData.subject,
+          title: taskData.title,
+          enunciado: taskData.enunciado,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.imageBase64) {
+          setExtraImage(`data:${data.mimeType || "image/png"};base64,${data.imageBase64}`);
+        } else {
+          showToast("⚠️ No se pudo generar la imagen");
+        }
+      }
+    } catch {
+      showToast("⚠️ Error generando imagen");
+    } finally {
+      setExtraImageLoading(false);
+    }
+  }
+
   async function generateExtra() {
     if (!taskData) return;
     const profile = activeProfile || { name: "el niño", age: 8, themeLabel: "dinos", themeEmoji: "🦕" } as Profile;
@@ -1065,7 +1102,20 @@ export default function Home() {
             </div>
             <div className="pizarra-actions">
               <button className="btn-action btn-secondary" onClick={printClean}>🖨️ Imprimir limpia</button>
-              <button className="btn-action btn-accent" onClick={generateExtra}>⭐ Actividad extra</button>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <span style={{ fontSize: 13, color: "rgba(255,255,255,.7)", fontWeight: 600 }}>Actividad extra:</span>
+                <button
+                  className="btn-action"
+                  style={{ background: extraMode === "text" ? "rgba(255,255,255,.35)" : "rgba(255,255,255,.15)", color: "white", padding: "6px 12px", fontSize: 13 }}
+                  onClick={() => { setExtraMode("text"); setExtraImage(null); generateExtra(); }}
+                >📝 Texto</button>
+                <button
+                  className="btn-action"
+                  style={{ background: extraMode === "image" ? "rgba(255,255,255,.35)" : "rgba(255,255,255,.15)", color: "white", padding: "6px 12px", fontSize: 13 }}
+                  onClick={() => { setExtraMode("image"); setExtraText(""); generateExtraImage(); }}
+                  disabled={extraImageLoading}
+                >{extraImageLoading ? "⏳" : "🎨"} Para colorear</button>
+              </div>
               <button className="btn-action btn-green" onClick={exportAudio} disabled={exportLoading}>
                 {exportLoading ? "⏳ Generando..." : "🎧 Exportar audio"}
               </button>
@@ -1143,11 +1193,28 @@ export default function Home() {
               {showExtra && (
                 <div className="extra-card">
                   <h3>⭐ Actividad extra para vos</h3>
-                  <p>{extraText}</p>
+                  {extraMode === "text" && <p>{extraText}</p>}
+                  {extraMode === "image" && (
+                    <div>
+                      {extraImageLoading && <p style={{ opacity: 0.7 }}>⏳ Generando imagen para colorear...</p>}
+                      {extraImage && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={extraImage} alt="Actividad para colorear" style={{ width: "100%", borderRadius: 12, border: "3px solid rgba(255,255,255,.3)" }} />
+                          <a
+                            href={extraImage}
+                            download="actividad-colorear.jpg"
+                            className="btn-action"
+                            style={{ background: "rgba(255,255,255,.25)", color: "white", justifyContent: "center", textDecoration: "none" }}
+                          >⬇️ Descargar para imprimir</a>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <button
                     className="btn-action"
-                    style={{ background: "rgba(255,255,255,0.25)", color: "white" }}
-                    onClick={() => setShowExtra(false)}
+                    style={{ background: "rgba(255,255,255,0.25)", color: "white", marginTop: 10 }}
+                    onClick={() => { setShowExtra(false); setExtraImage(null); }}
                   >Cerrar</button>
                 </div>
               )}
