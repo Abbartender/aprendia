@@ -333,8 +333,12 @@ export default function Home() {
       }
 
       const errData = await res.json().catch(() => ({}));
-      const detail = errData.details?.[0] || errData.error || "error desconocido";
-      showToast(`⚠️ ${String(detail).slice(0, 120)}`);
+      const detail = String(errData.details?.[0] || errData.error || "");
+      if (detail.includes("429") || detail.includes("quota")) {
+        showToast("⚠️ Cuota de Gemini agotada. Habilitá billing en Google AI Studio.");
+      } else {
+        showToast(`⚠️ ${detail.slice(0, 120) || "No se pudo limpiar la imagen"}`);
+      }
     } catch {
       showToast("⚠️ No se pudo limpiar");
     } finally {
