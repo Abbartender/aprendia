@@ -30,7 +30,7 @@ interface TaskData {
   tags?: { text: string; css: string }[];
 }
 
-type Screen = "home" | "processing" | "pizarra";
+type Screen = "home" | "processing" | "review" | "pizarra";
 
 // ─── Constants ───────────────────────────────────────────────
 
@@ -106,6 +106,14 @@ export default function Home() {
   const [audioProgress, setAudioProgress] = useState(0);
   const [exportLoading, setExportLoading] = useState(false);
   const [processingFor, setProcessingFor] = useState("el niño");
+
+  // review screen
+  const [reviewText, setReviewText] = useState("");
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const panStart = useRef({ x: 0, y: 0 });
+  const panOrigin = useRef({ x: 0, y: 0 });
 
   // profile form
   const [formName, setFormName] = useState("");
@@ -244,10 +252,10 @@ export default function Home() {
       if (!res.ok) throw new Error("analyze failed");
       const result: TaskData = await res.json();
       result.imageData = imageData;
-      showPizarra(result);
+      showReview(result);
     } catch (err) {
       console.error(err);
-      showPizarra({ ...DEMO.math, imageData: undefined });
+      showReview({ ...DEMO.math, imageData: imageData });
       showToast("⚠️ Usando modo demo — configurá las API keys en Vercel");
     }
   }
@@ -258,6 +266,22 @@ export default function Home() {
     setScreen("processing");
     window.scrollTo(0, 0);
     animateSteps(() => showPizarra(DEMO[type]), true);
+  }
+
+  // ── Review
+  function showReview(data: TaskData) {
+    setTaskData(data);
+    setReviewText(data.enunciado || data.text || "");
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+    setScreen("review");
+    window.scrollTo(0, 0);
+  }
+
+  function confirmReview() {
+    if (!taskData) return;
+    const updated = { ...taskData, enunciado: reviewText, text: reviewText };
+    showPizarra(updated);
   }
 
   // ── Pizarra
@@ -272,9 +296,12 @@ export default function Home() {
     window.scrollTo(0, 0);
   }
 
-  // ── Word spans
+  // ── Word spans (rebuild when pizarraText changes, but only if not editing)
+  const isEditingPizarra = useRef(false);
+
   useEffect(() => {
     if (screen !== "pizarra" || !bbTextRef.current) return;
+    if (isEditingPizarra.current) return;
     const container = bbTextRef.current;
     container.innerHTML = "";
     wordSpansRef.current = [];
@@ -610,6 +637,82 @@ export default function Home() {
         </div>
       )}
 
+      {/* ══ REVISIÓN ══ */}
+      {screen === "review" && taskData && (
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+            <button className="btn-back" onClick={() => setScreen("home")}>← Volver</button>
+            <h2 style={{ fontFamily: "Fredoka One, cursive", color: "var(--primary)", fontSize: 24 }}>
+              Revisá la tarea antes de mostrarla
+            </h2>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+
+            {/* IMAGEN CON ZOOM Y PAN */}
+            <div className="panel-card" style={{ overflow: "hidden", padding: 12 }}>
+              <div className="panel-title">📷 Imagen original — zoom y desplazamiento</div>
+              <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                <button className="btn-action btn-secondary" style={{ padding: "6px 14px" }}
+                  onClick={() => setZoom(z => Math.min(z + 0.25, 4))}>+ Zoom</button>
+                <button className="btn-action btn-secondary" style={{ padding: "6px 14px" }}
+                  onClick={() => setZoom(z => Math.max(z - 0.25, 0.5))}>− Zoom</button>
+                <button className="btn-action btn-secondary" style={{ padding: "6px 14px" }}
+                  onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}>↺ Reset</button>
+              </div>
+              <div
+                style={{ overflow: "hidden", cursor: isPanning ? "grabbing" : "grab", height: 480, background: "#111", borderRadius: 10, position: "relative" }}
+                onMouseDown={(e) => { setIsPanning(true); panStart.current = { x: e.clientX, y: e.clientY }; panOrigin.current = pan; }}
+                onMouseMove={(e) => {
+                  if (!isPanning) return;
+                  setPan({ x: panOrigin.current.x + e.clientX - panStart.current.x, y: panOrigin.current.y + e.clientY - panStart.current.y });
+                }}
+                onMouseUp={() => setIsPanning(false)}
+                onMouseLeave={() => setIsPanning(false)}
+                onWheel={(e) => { e.preventDefault(); setZoom(z => Math.min(Math.max(z - e.deltaY * 0.001, 0.5), 4)); }}
+              >
+                {taskData.imageData && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={taskData.imageData}
+                    alt="Tarea original"
+                    style={{
+                      transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                      transformOrigin: "top left",
+                      position: "absolute",
+                      top: 0, left: 0,
+                      maxWidth: "none",
+                      userSelect: "none",
+                      pointerEvents: "none",
+                    }}
+                    draggable={false}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* TEXTO EDITABLE */}
+            <div className="panel-card" style={{ display: "flex", flexDirection: "column" }}>
+              <div className="panel-title">✏️ Enunciado detectado — editá si hay errores</div>
+              <textarea
+                className="script-editor"
+                style={{ flex: 1, minHeight: 380, fontSize: 16 }}
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+                placeholder="El texto detectado aparece aquí..."
+              />
+              <button
+                className="btn-action btn-primary"
+                style={{ width: "100%", justifyContent: "center", marginTop: 16, fontSize: 16, padding: "14px" }}
+                onClick={confirmReview}
+              >
+                ✅ Confirmar y ver pizarra
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ══ PIZARRA ══ */}
       {screen === "pizarra" && taskData && (
         <div id="pizarra">
@@ -641,7 +744,20 @@ export default function Home() {
                   <div className="bb-subject">{taskData.subject}</div>
                   <div className="bb-title">{taskData.title}</div>
                   <div className="bb-divider" />
-                  <div className="bb-text" ref={bbTextRef} />
+                  <div
+                    className="bb-text"
+                    ref={bbTextRef}
+                    contentEditable
+                    suppressContentEditableWarning
+                    onFocus={() => { isEditingPizarra.current = true; stopAudio(); }}
+                    onBlur={(e) => {
+                      isEditingPizarra.current = false;
+                      const newText = e.currentTarget.innerText;
+                      setPizarraText(newText);
+                    }}
+                    style={{ outline: "none", minHeight: 40, cursor: "text" }}
+                    title="Hacé click para editar el texto de la pizarra"
+                  />
                   <div className="audio-bar">
                     <button className="btn-play" onClick={toggleAudio}>{playBtnLabel}</button>
                     <div className="audio-info">
