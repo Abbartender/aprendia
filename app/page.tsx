@@ -326,23 +326,16 @@ export default function Home() {
       if (res.ok) {
         const data = await res.json();
         if (data.imageBase64) {
-          setCleanedImage(`data:${data.mimeType};base64,${data.imageBase64}`);
+          setCleanedImage(`data:${data.mimeType || "image/png"};base64,${data.imageBase64}`);
           showToast("✅ Imagen limpia lista para descargar");
           return;
         }
       }
 
-      // Fallback: HTML reconstruction con Claude
-      const res2 = await fetchWithRetry("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64: base64, mimeType, step: "clean" }),
-      });
-      if (res2.ok) {
-        const data2 = await res2.json();
-        setCleanedHtml(data2.html || "");
-        showToast("✅ Documento limpio generado");
-      }
+      // Si Gemini falla, mostramos toast de error
+      const errData = await res.json().catch(() => ({}));
+      console.error("[cleanTraces] Gemini failed:", errData);
+      showToast("⚠️ No se pudo limpiar la imagen. Intentá de nuevo.");
     } catch {
       showToast("⚠️ No se pudo limpiar");
     } finally {
