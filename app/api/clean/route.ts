@@ -6,7 +6,7 @@ const MODELS = [
   "gemini-2.0-flash-exp",
 ];
 
-async function tryGeminiClean(apiKey: string, imageBase64: string, mimeType: string, model: string) {
+async function tryGeminiClean(apiKey: string, imageBase64: string, mimeType: string, model: string, errors?: string[]) {
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {
@@ -36,7 +36,9 @@ async function tryGeminiClean(apiKey: string, imageBase64: string, mimeType: str
   const body = await res.text();
 
   if (!res.ok) {
-    console.error(`[clean] ${model} error ${res.status}:`, body.slice(0, 400));
+    const msg = `${model} → ${res.status}: ${body.slice(0, 300)}`;
+    console.error(`[clean]`, msg);
+    errors?.push(msg);
     return null;
   }
 
@@ -71,15 +73,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Gemini no configurado" }, { status: 503 });
     }
 
+    const errors: string[] = [];
     for (const model of MODELS) {
-      const result = await tryGeminiClean(apiKey, imageBase64, mimeType, model);
+      const result = await tryGeminiClean(apiKey, imageBase64, mimeType, model, errors);
       if (result) {
         console.log(`[clean] success with model: ${model}`);
         return NextResponse.json(result);
       }
     }
 
-    return NextResponse.json({ error: "No se generó imagen" }, { status: 500 });
+    return NextResponse.json({ error: "No se generó imagen", details: errors }, { status: 500 });
 
   } catch (err) {
     console.error("[clean] error:", err);

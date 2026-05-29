@@ -332,10 +332,11 @@ export default function Home() {
         }
       }
 
-      // Si Gemini falla, mostramos toast de error
+      // Si Gemini falla, mostramos el error real
       const errData = await res.json().catch(() => ({}));
       console.error("[cleanTraces] Gemini failed:", errData);
-      showToast("⚠️ No se pudo limpiar la imagen. Intentá de nuevo.");
+      const detail = errData.details?.[0] || errData.error || "error desconocido";
+      showToast(`⚠️ ${detail.slice(0, 120)}`);
     } catch {
       showToast("⚠️ No se pudo limpiar");
     } finally {
