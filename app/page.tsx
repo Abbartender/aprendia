@@ -539,6 +539,19 @@ export default function Home() {
             <p>Fotocopia del profe, hoja del compañero, o cualquier tarea manuscrita</p>
           </div>
 
+          {/* Ir directo a la pizarra */}
+          {taskData && (
+            <div style={{ textAlign: "center", marginBottom: 24 }}>
+              <button
+                className="btn-action btn-primary"
+                style={{ fontSize: 16, padding: "12px 32px" }}
+                onClick={() => { stopAudio(); setScreen("pizarra"); }}
+              >
+                📋 Volver a la pizarra anterior
+              </button>
+            </div>
+          )}
+
           {/* Profiles */}
           <p className="section-title">¿Para quién es la tarea?</p>
           <div className="profiles-row">
