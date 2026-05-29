@@ -30,7 +30,7 @@ interface TaskData {
   tags?: { text: string; css: string }[];
 }
 
-type Screen = "home" | "processing" | "review" | "pizarra";
+type Screen = "home" | "processing" | "review" | "pizarra" | "libre";
 
 // ─── Constants ───────────────────────────────────────────────
 
@@ -107,6 +107,10 @@ export default function Home() {
   const [playbackRate, setPlaybackRate] = useState(0.8);
   const [exportLoading, setExportLoading] = useState(false);
   const [processingFor, setProcessingFor] = useState("el niño");
+
+  // pizarra libre
+  const [libreText, setLibreText] = useState("");
+  const [libreLoading, setLibreLoading] = useState(false);
 
   // review screen
   const [reviewText, setReviewText] = useState("");
@@ -283,6 +287,39 @@ export default function Home() {
     if (!taskData) return;
     const updated = { ...taskData, enunciado: reviewText, text: reviewText };
     showPizarra(updated);
+  }
+
+  async function generateFromText() {
+    if (!libreText.trim()) { showToast("⚠️ Escribí el tema o texto primero"); return; }
+    setLibreLoading(true);
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: libreText, childAge: activeProfile?.age || 8 }),
+      });
+      const data = await res.json();
+      showPizarra({
+        subject: data.subject || "General",
+        title: data.title || "Pizarra libre",
+        enunciado: libreText,
+        text: libreText,
+        script: data.script || "",
+        summary: data.summary || "",
+      });
+    } catch {
+      // Si falla la API, igual abre la pizarra con el texto escrito
+      showPizarra({
+        subject: "General",
+        title: "Pizarra libre",
+        enunciado: libreText,
+        text: libreText,
+        script: libreText,
+        summary: "",
+      });
+    } finally {
+      setLibreLoading(false);
+    }
   }
 
   // ── Pizarra
@@ -568,6 +605,17 @@ export default function Home() {
             <p>Fotocopia del profe, hoja del compañero, o cualquier tarea manuscrita</p>
           </div>
 
+          {/* Pizarra libre */}
+          <div style={{ textAlign: "center", margin: "16px 0 8px" }}>
+            <button
+              className="btn-action btn-secondary"
+              style={{ fontSize: 15, padding: "12px 28px", borderRadius: 30 }}
+              onClick={() => { setLibreText(""); setScreen("libre"); }}
+            >
+              ✏️ Pizarra libre — escribir sin foto
+            </button>
+          </div>
+
           {/* Ir directo a la pizarra */}
           {taskData && (
             <div style={{ textAlign: "center", marginBottom: 24 }}>
@@ -636,6 +684,37 @@ export default function Home() {
               <li id="step5"><div className="step-icon">✨</div>Preparando la pizarra...</li>
             </ul>
           </div>
+        </div>
+      )}
+
+      {/* ══ PIZARRA LIBRE ══ */}
+      {screen === "libre" && (
+        <div style={{ maxWidth: 680, margin: "0 auto", padding: "40px 24px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
+            <button className="btn-back" onClick={() => setScreen("home")}>← Volver</button>
+            <h2 style={{ fontFamily: "Fredoka One, cursive", color: "var(--primary)", fontSize: 26, margin: 0 }}>
+              ✏️ Pizarra libre
+            </h2>
+          </div>
+          <p style={{ color: "#666", marginBottom: 20, fontSize: 15 }}>
+            Escribí el tema, el enunciado o lo que quieras explicar. Claude genera el script pedagógico y podés escucharlo.
+          </p>
+          <textarea
+            className="script-editor"
+            style={{ width: "100%", minHeight: 220, fontSize: 16, marginBottom: 16 }}
+            placeholder="Ej: Las fracciones — ¿cómo sumar ½ + ¼? &#10;Ej: Hoy repasamos las tablas del 6 y del 7&#10;Ej: El sistema solar tiene 8 planetas..."
+            value={libreText}
+            onChange={(e) => setLibreText(e.target.value)}
+            autoFocus
+          />
+          <button
+            className="btn-action btn-primary"
+            style={{ width: "100%", justifyContent: "center", fontSize: 17, padding: "15px" }}
+            onClick={generateFromText}
+            disabled={libreLoading}
+          >
+            {libreLoading ? "⏳ Generando script..." : "🧠 Generar pizarra y audio"}
+          </button>
         </div>
       )}
 
