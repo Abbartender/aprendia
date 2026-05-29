@@ -7,7 +7,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 interface Profile {
   name: string;
   age: number;
-  grade: number; // grado escolar (1-7)
+  grade: number;
+  country: string; // país donde estudia (para adaptar currículo)
   theme: string;
   themeLabel: string;
   themeEmoji: string;
@@ -125,9 +126,11 @@ export default function Home() {
   const [cleanedImage, setCleanedImage] = useState<string | null>(null);
 
   // ── Freemium ──────────────────────────────────────────────
-  // TODO: reemplazar con verificación real de Stripe
   const isPremium = false;
   const [showUpgrade, setShowUpgrade] = useState(false);
+
+  // ── Tipografía pizarra ─────────────────────────────────
+  const [useUppercase, setUseUppercase] = useState(false);
 
   // review screen
   const [reviewText, setReviewText] = useState("");
@@ -141,6 +144,7 @@ export default function Home() {
   const [formName, setFormName] = useState("");
   const [formAge, setFormAge] = useState("");
   const [formGrade, setFormGrade] = useState("1");
+  const [formCountry, setFormCountry] = useState("Argentina");
   const [formTheme, setFormTheme] = useState("dinos");
   const [formVoice, setFormVoice] = useState<"female" | "male">("female");
   const [customEmoji, setCustomEmoji] = useState("");
@@ -169,6 +173,7 @@ export default function Home() {
       setFormName(activeProfile.name);
       setFormAge(String(activeProfile.age));
       setFormGrade(String(activeProfile.grade || 1));
+      setFormCountry(activeProfile.country || "Argentina");
       setFormVoice(activeProfile.voice);
       if (activeProfile.theme === "__custom__") {
         setIsCustomTheme(true);
@@ -179,7 +184,7 @@ export default function Home() {
         setFormTheme(activeProfile.theme);
       }
     } else if (modalOpen && !activeProfile) {
-      setFormName(""); setFormAge(""); setFormGrade("1");
+      setFormName(""); setFormAge(""); setFormGrade("1"); setFormCountry("Argentina");
     }
   }, [modalOpen, activeProfile]);
 
@@ -199,6 +204,7 @@ export default function Home() {
       name: formName.trim(),
       age: parseInt(formAge) || 8,
       grade: parseInt(formGrade) || 1,
+      country: formCountry || "Argentina",
       theme: isCustomTheme ? "__custom__" : formTheme,
       themeLabel,
       themeEmoji,
@@ -394,6 +400,7 @@ export default function Home() {
           childGrade: activeProfile?.grade || 1,
           childName: activeProfile?.name || "el niño",
           childTheme: activeProfile?.themeLabel || "",
+          childCountry: activeProfile?.country || "Argentina",
         }),
       });
       if (res.ok) {
@@ -1133,6 +1140,12 @@ export default function Home() {
             </div>
             <div className="pizarra-actions">
               <button className="btn-action btn-secondary" onClick={printClean}>🖨️ Imprimir limpia</button>
+              <button
+                className="btn-action"
+                style={{ background: useUppercase ? "rgba(255,255,255,.35)" : "rgba(255,255,255,.15)", color: "white", padding: "6px 12px", fontSize: 13, fontWeight: 700 }}
+                onClick={() => setUseUppercase(u => !u)}
+                title="Cambiar entre mayúsculas y minúsculas"
+              >AA {useUppercase ? "Imprenta" : "cursiva"}</button>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <span style={{ fontSize: 13, color: "rgba(255,255,255,.7)", fontWeight: 600 }}>Actividad extra:</span>
                 <button
@@ -1185,7 +1198,7 @@ export default function Home() {
                       const newText = e.currentTarget.innerText;
                       setPizarraText(newText);
                     }}
-                    style={{ outline: "none", minHeight: 40, cursor: "text" }}
+                    style={{ outline: "none", minHeight: 40, cursor: "text", textTransform: useUppercase ? "uppercase" : "none", letterSpacing: useUppercase ? "0.04em" : "normal" }}
                     title="Hacé click para editar el texto de la pizarra"
                   />
                   <div className="audio-bar">
@@ -1274,6 +1287,10 @@ export default function Home() {
 
               <div className="panel-card">
                 <div className="panel-title">✏️ Script pedagógico</div>
+                <div style={{ background: "#fff8e1", border: "1px solid #ffe082", borderRadius: 10, padding: "8px 12px", fontSize: 12, color: "#7c6000", marginBottom: 8, display: "flex", gap: 6, alignItems: "flex-start" }}>
+                  <span>⚠️</span>
+                  <span>Este contenido es generado por IA y puede tener errores. Revisalo antes de mostrárselo al niño.</span>
+                </div>
                 <textarea
                   className="script-editor"
                   value={scriptText}
@@ -1359,6 +1376,26 @@ export default function Home() {
                   <option value="7">7° grado</option>
                 </select>
               </div>
+            </div>
+
+            <div className="form-group">
+              <label>País donde estudia</label>
+              <select value={formCountry} onChange={(e) => setFormCountry(e.target.value)}
+                style={{ width: "100%", padding: "10px 12px", borderRadius: 12, border: "2px solid var(--border)", fontSize: 15, background: "var(--surface)", color: "var(--text)" }}>
+                <option>Argentina</option>
+                <option>México</option>
+                <option>Colombia</option>
+                <option>Chile</option>
+                <option>España</option>
+                <option>Uruguay</option>
+                <option>Perú</option>
+                <option>Venezuela</option>
+                <option>Ecuador</option>
+                <option>Bolivia</option>
+                <option>Paraguay</option>
+                <option>Guatemala</option>
+                <option>Otro</option>
+              </select>
             </div>
 
             <div className="form-group">

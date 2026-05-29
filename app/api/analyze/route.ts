@@ -13,26 +13,30 @@ const EXTRACT_PROMPT = `Analizá esta imagen de tarea escolar y respondé SOLO c
 }`;
 
 // ── PASO 2: genera script pedagógico desde el texto ya corregido por la mamá
-const SCRIPT_PROMPT = (enunciado: string, childAge: number, childGrade?: number, childName?: string, childTheme?: string) =>
-  `Sos un asistente educativo para niños de primaria en Argentina.
+const SCRIPT_PROMPT = (enunciado: string, childAge: number, childGrade?: number, childName?: string, childTheme?: string, childCountry?: string) =>
+  `Sos un asistente educativo para niños de primaria de ${childCountry || "Argentina"}.
 La mamá o papá ya revisó y corrigió este enunciado de tarea:
 
 "${enunciado}"
 
-El niño se llama ${childName || "el niño"}, tiene ${childAge} años y está en ${childGrade ? `${childGrade}° grado` : "primaria"}.${childTheme ? ` Le encanta el tema: ${childTheme}.` : ""}
+El niño se llama ${childName || "el niño"}, tiene ${childAge} años y cursa ${childGrade ? `${childGrade}° grado` : "primaria"} en ${childCountry || "Argentina"}.${childTheme ? ` Su tema favorito es: ${childTheme}.` : ""}
 
-Modulá el contenido, vocabulario y ejemplos al nivel de ${childGrade ? `${childGrade}° grado` : "primaria"}.${childTheme ? ` Podés usar ejemplos o referencias a ${childTheme} para hacer la explicación más cercana.` : ""}
+IMPORTANTE:
+- Adaptá el vocabulario, ejemplos y nivel de complejidad exactamente a ${childGrade ? `${childGrade}° grado` : "primaria"} del currículo de ${childCountry || "Argentina"}
+- Usá español neutro y claro, sin errores gramaticales
+- Dirigite a ${childName || "el niño"} por su nombre en el script
+- El script debe sonar natural al escucharse en voz alta, sin listas ni bullets${childTheme ? `\n- Podés usar analogías con ${childTheme} para hacer la explicación más cercana` : ""}
 
-Respondé SOLO con este JSON exacto, sin backticks:
+Respondé SOLO con este JSON exacto, sin backticks ni texto extra:
 {
-  "script": "explicación pedagógica simple del tema en 3-4 oraciones, para leer en voz alta al niño. Tono cálido y simple, dirigite a ${childName || "el niño"} por su nombre.",
-  "summary": "resumen muy simple de 2-3 oraciones sobre el tema, para que el niño escuche camino a la escuela.",
-  "extraActivity": "una actividad extra corta y divertida relacionada con el tema, apropiada para ${childGrade ? `${childGrade}° grado` : "su edad"}"
+  "script": "explicación pedagógica del tema en 3-4 oraciones fluidas para leer en voz alta. Tono cálido, simple y directo. Sin listas.",
+  "summary": "resumen de 2-3 oraciones para escuchar camino a la escuela.",
+  "extraActivity": "una actividad corta, concreta y divertida apropiada para ${childGrade ? `${childGrade}° grado` : "su edad"} de ${childCountry || "Argentina"}"
 }`;
 
 export async function POST(req: NextRequest) {
   try {
-    const { imageBase64, mimeType, step, enunciado, childAge, childGrade, childName, childTheme } = await req.json();
+    const { imageBase64, mimeType, step, enunciado, childAge, childGrade, childName, childTheme, childCountry } = await req.json();
 
     // ── PASO 2: generar script desde texto corregido
     if (step === "script") {
@@ -41,7 +45,7 @@ export async function POST(req: NextRequest) {
       const message = await client.messages.create({
         model: "claude-sonnet-4-20250514",
         max_tokens: 600,
-        messages: [{ role: "user", content: SCRIPT_PROMPT(enunciado, childAge || 8, childGrade, childName, childTheme) }],
+        messages: [{ role: "user", content: SCRIPT_PROMPT(enunciado, childAge || 8, childGrade, childName, childTheme, childCountry) }],
       });
 
       const raw = message.content[0].type === "text" ? message.content[0].text : "";
