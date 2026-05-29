@@ -136,10 +136,16 @@ export default function Home() {
   // ── Modo de la app ─────────────────────────────────────
   const [appMode, setAppMode] = useState<AppMode>(null);
 
-  // ── Pedidos ────────────────────────────────────────────
+  // ── Pedidos (chat) ─────────────────────────────────────
+  type PedidoMessage = {
+    role: "user" | "assistant";
+    text: string;
+    result?: { html?: string; imageBase64?: string; mimeType?: string; text?: string };
+  };
   const [pedidoText, setPedidoText] = useState("");
   const [pedidoLoading, setPedidoLoading] = useState(false);
-  const [pedidoResult, setPedidoResult] = useState<{ html?: string; imageBase64?: string; mimeType?: string; text?: string } | null>(null);
+  const [pedidoMessages, setPedidoMessages] = useState<PedidoMessage[]>([]);
+  const pedidoChatRef = useRef<HTMLDivElement>(null);
 
   // review screen
   const [reviewText, setReviewText] = useState("");
@@ -1056,103 +1062,179 @@ export default function Home() {
         </div>
       )}
 
-      {/* ══ PEDIDOS ══ */}
+      {/* ══ PEDIDOS (CHAT) ══ */}
       {screen === "pedido" && (
-        <div style={{ maxWidth: 680, margin: "0 auto", padding: "40px 24px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-            <button className="btn-back" onClick={() => { setScreen("home"); setAppMode(null); setPedidoResult(null); }}>← Volver</button>
-            <h2 style={{ fontFamily: "var(--font-display)", color: "#9b59b6", fontSize: 24, margin: 0 }}>✨ Resolver un pedido</h2>
-          </div>
+        <div style={{ maxWidth: 700, margin: "0 auto", display: "flex", flexDirection: "column", height: "calc(100vh - 64px)" }}>
 
-          <p style={{ color: "#666", fontSize: 15, marginBottom: 16 }}>
-            Escribí lo que necesitás y Aprend·IA lo genera para {activeProfile?.name || "vos"}.
-          </p>
-
-          {/* Ejemplos */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-            {[
-              "Dame una lámina del sistema solar",
-              `Ejercicios de suma para ${activeProfile?.grade || 2}° grado`,
-              "Sopa de letras con nombres de animales",
-              "Una historia corta sobre dinosaurios",
-              `Tabla del ${Math.floor(Math.random()*8)+2} para practicar`,
-            ].map(ex => (
-              <button key={ex} onClick={() => setPedidoText(ex)}
-                style={{ background: "#f3eaff", border: "1px solid #d8b4ff", borderRadius: 20, padding: "6px 14px", fontSize: 13, color: "#7b2eb0", cursor: "pointer" }}>
-                {ex}
+          {/* Header fijo */}
+          <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12, background: "var(--surface)", flexShrink: 0 }}>
+            <button className="btn-back" onClick={() => { setScreen("home"); setAppMode(null); setPedidoMessages([]); }}>← Volver</button>
+            <h2 style={{ fontFamily: "var(--font-display)", color: "#9b59b6", fontSize: 20, margin: 0, flex: 1 }}>✨ Resolver un pedido</h2>
+            {pedidoMessages.length > 0 && (
+              <button onClick={() => setPedidoMessages([])}
+                style={{ background: "none", border: "1px solid var(--border)", borderRadius: 20, padding: "4px 12px", fontSize: 12, color: "#999", cursor: "pointer" }}>
+                Nueva conversación
               </button>
-            ))}
+            )}
           </div>
 
-          <textarea
-            style={{ width: "100%", minHeight: 120, padding: "14px 16px", borderRadius: 16, border: "2px solid var(--border)", fontSize: 15, fontFamily: "var(--font-body)", resize: "vertical", boxSizing: "border-box" }}
-            placeholder={`Ej: "Dame una lámina sobre las plantas para ${activeProfile?.grade || 2}° grado de ${activeProfile?.country || "Argentina"}"...`}
-            value={pedidoText}
-            onChange={e => setPedidoText(e.target.value)}
-          />
+          {/* Área de mensajes scrollable */}
+          <div ref={pedidoChatRef} style={{ flex: 1, overflowY: "auto", padding: "20px 20px 8px", display: "flex", flexDirection: "column", gap: 16 }}>
 
-          <button
-            className="btn-action btn-primary"
-            style={{ width: "100%", justifyContent: "center", fontSize: 16, padding: "14px", marginTop: 12 }}
-            disabled={pedidoLoading || !pedidoText.trim()}
-            onClick={async () => {
-              if (!pedidoText.trim()) return;
-              setPedidoLoading(true);
-              setPedidoResult(null);
-              try {
-                const res = await fetch("/api/pedido", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    pedido: pedidoText,
-                    childName: activeProfile?.name || "",
-                    childAge: activeProfile?.age || 8,
-                    childGrade: activeProfile?.grade || 1,
-                    childTheme: activeProfile?.themeLabel || "",
-                    childCountry: activeProfile?.country || "Argentina",
-                  }),
-                });
-                if (res.ok) {
-                  const data = await res.json();
-                  setPedidoResult(data);
-                } else {
-                  showToast("⚠️ No se pudo generar el pedido");
-                }
-              } catch { showToast("⚠️ Error al procesar el pedido"); }
-              finally { setPedidoLoading(false); }
-            }}
-          >
-            {pedidoLoading ? "⏳ Generando..." : "✨ Generar"}
-          </button>
+            {/* Pantalla vacía con ejemplos */}
+            {pedidoMessages.length === 0 && (
+              <div style={{ textAlign: "center", padding: "20px 0" }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>✨</div>
+                <p style={{ color: "#666", fontSize: 15, marginBottom: 20 }}>
+                  Pedile lo que necesitás para {activeProfile?.name || "el niño"}.<br/>
+                  <span style={{ fontSize: 13, color: "#aaa" }}>Podés ir refinando el resultado con más mensajes.</span>
+                </p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+                  {[
+                    "Dame una lámina del sistema solar",
+                    `Ejercicios de multiplicación para ${activeProfile?.grade || 2}° grado`,
+                    "Sopa de letras con nombres de animales",
+                    "Una historia corta sobre dinosaurios",
+                    "Tabla del 7 para practicar",
+                    `Un crucigrama sobre ${activeProfile?.themeLabel || "la naturaleza"}`,
+                  ].map(ex => (
+                    <button key={ex} onClick={() => setPedidoText(ex)}
+                      style={{ background: "#f3eaff", border: "1px solid #d8b4ff", borderRadius: 20, padding: "8px 16px", fontSize: 13, color: "#7b2eb0", cursor: "pointer" }}>
+                      {ex}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
-          {/* Resultado */}
-          {pedidoResult && (
-            <div style={{ marginTop: 24, border: "2px solid #d8b4ff", borderRadius: 20, overflow: "hidden" }}>
-              <div style={{ background: "linear-gradient(135deg, #9b59b6, #e91e8c)", padding: "12px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ color: "#fff", fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 15 }}>✨ Tu pedido está listo</span>
-                {pedidoResult.imageBase64 && (
-                  <a href={`data:${pedidoResult.mimeType || "image/png"};base64,${pedidoResult.imageBase64}`} download="pedido-aprendia.jpg"
-                    style={{ background: "rgba(255,255,255,.25)", borderRadius: 20, padding: "5px 14px", color: "#fff", fontWeight: 700, fontSize: 13, textDecoration: "none" }}>
-                    ⬇️ Descargar JPG
-                  </a>
+            {/* Mensajes del chat */}
+            {pedidoMessages.map((msg, i) => (
+              <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: msg.role === "user" ? "flex-end" : "flex-start", gap: 8 }}>
+                {/* Burbuja de texto */}
+                <div style={{
+                  maxWidth: "80%",
+                  background: msg.role === "user" ? "var(--primary)" : "#f0e8ff",
+                  color: msg.role === "user" ? "#fff" : "#333",
+                  borderRadius: msg.role === "user" ? "20px 20px 4px 20px" : "20px 20px 20px 4px",
+                  padding: "10px 16px",
+                  fontSize: 14,
+                  lineHeight: 1.5,
+                }}>
+                  {msg.text}
+                </div>
+
+                {/* Resultado generado */}
+                {msg.result && (
+                  <div style={{ width: "100%", border: "2px solid #d8b4ff", borderRadius: 16, overflow: "hidden" }}>
+                    <div style={{ background: "linear-gradient(135deg, #9b59b6, #c0399a)", padding: "10px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>✨ Resultado</span>
+                      {msg.result.imageBase64 && (
+                        <a href={`data:${msg.result.mimeType || "image/png"};base64,${msg.result.imageBase64}`}
+                          download="pedido-aprendia.jpg"
+                          style={{ background: "rgba(255,255,255,.25)", borderRadius: 20, padding: "4px 12px", color: "#fff", fontWeight: 700, fontSize: 12, textDecoration: "none" }}>
+                          ⬇️ Descargar JPG
+                        </a>
+                      )}
+                      {(msg.result.html || msg.result.text) && (
+                        <button onClick={() => {
+                          const win = window.open("", "_blank");
+                          if (!win) return;
+                          win.document.write((msg.result!.html || `<pre style="font-family:Arial;padding:40px;font-size:16px">${msg.result!.text}</pre>`) + `<script>setTimeout(()=>window.print(),400)<\/script>`);
+                          win.document.close();
+                        }} style={{ background: "rgba(255,255,255,.25)", border: "none", borderRadius: 20, padding: "4px 12px", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                          🖨️ Imprimir
+                        </button>
+                      )}
+                    </div>
+                    {msg.result.imageBase64 && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={`data:${msg.result.mimeType || "image/png"};base64,${msg.result.imageBase64}`} alt="Resultado" style={{ width: "100%", display: "block" }} />
+                    )}
+                    {msg.result.html && (
+                      <iframe srcDoc={msg.result.html} style={{ width: "100%", minHeight: 420, border: "none", display: "block" }} title="Resultado" />
+                    )}
+                    {msg.result.text && !msg.result.html && !msg.result.imageBase64 && (
+                      <div style={{ background: "#fff", padding: "16px 20px", fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{msg.result.text}</div>
+                    )}
+                  </div>
                 )}
               </div>
-              {pedidoResult.imageBase64 && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={`data:${pedidoResult.mimeType || "image/png"};base64,${pedidoResult.imageBase64}`} alt="Pedido generado" style={{ width: "100%", display: "block" }} />
-              )}
-              {pedidoResult.html && (
-                <div style={{ background: "#fff", padding: 0 }}>
-                  <iframe srcDoc={pedidoResult.html} style={{ width: "100%", minHeight: 500, border: "none" }} title="Pedido" />
+            ))}
+
+            {/* Indicador de carga */}
+            {pedidoLoading && (
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                <div style={{ background: "#f0e8ff", borderRadius: "20px 20px 20px 4px", padding: "12px 18px", fontSize: 14, color: "#9b59b6" }}>
+                  <span style={{ display: "inline-flex", gap: 4 }}>
+                    <span style={{ animation: "bounce 1s infinite 0s" }}>·</span>
+                    <span style={{ animation: "bounce 1s infinite .2s" }}>·</span>
+                    <span style={{ animation: "bounce 1s infinite .4s" }}>·</span>
+                  </span>
                 </div>
-              )}
-              {pedidoResult.text && !pedidoResult.html && !pedidoResult.imageBase64 && (
-                <div style={{ background: "#fff", padding: "20px 24px", fontSize: 15, lineHeight: 1.7, color: "#333", whiteSpace: "pre-wrap" }}>
-                  {pedidoResult.text}
-                </div>
-              )}
+              </div>
+            )}
+          </div>
+
+          {/* Input fijo abajo */}
+          <div style={{ padding: "12px 20px 20px", borderTop: "1px solid var(--border)", background: "var(--surface)", flexShrink: 0 }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
+              <textarea
+                style={{ flex: 1, padding: "12px 16px", borderRadius: 20, border: "2px solid var(--border)", fontSize: 15, fontFamily: "var(--font-body)", resize: "none", minHeight: 48, maxHeight: 140, lineHeight: 1.4, boxSizing: "border-box", outline: "none" }}
+                placeholder={pedidoMessages.length === 0 ? `Ej: Dame una lámina del sistema solar para ${activeProfile?.grade || 2}° grado...` : "Seguí conversando, corregí o pedí cambios..."}
+                value={pedidoText}
+                onChange={e => setPedidoText(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!pedidoLoading && pedidoText.trim()) document.getElementById("pedido-send")?.click(); }
+                }}
+                rows={1}
+              />
+              <button
+                id="pedido-send"
+                className="btn-action btn-primary"
+                style={{ padding: "12px 20px", borderRadius: 20, fontSize: 15, flexShrink: 0 }}
+                disabled={pedidoLoading || !pedidoText.trim()}
+                onClick={async () => {
+                  const userMsg = pedidoText.trim();
+                  if (!userMsg) return;
+                  setPedidoText("");
+                  const newMessages: PedidoMessage[] = [...pedidoMessages, { role: "user", text: userMsg }];
+                  setPedidoMessages(newMessages);
+                  setPedidoLoading(true);
+                  // Scroll al fondo
+                  setTimeout(() => { pedidoChatRef.current?.scrollTo({ top: 9999, behavior: "smooth" }); }, 50);
+                  try {
+                    const res = await fetch("/api/pedido", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        messages: newMessages.map(m => ({ role: m.role, content: m.text })),
+                        childName: activeProfile?.name || "",
+                        childAge: activeProfile?.age || 8,
+                        childGrade: activeProfile?.grade || 1,
+                        childTheme: activeProfile?.themeLabel || "",
+                        childCountry: activeProfile?.country || "Argentina",
+                      }),
+                    });
+                    if (res.ok) {
+                      const data = await res.json();
+                      const assistantText = data.reply || "Acá está lo que generé:";
+                      setPedidoMessages(prev => [...prev, { role: "assistant", text: assistantText, result: data.result || undefined }]);
+                    } else {
+                      setPedidoMessages(prev => [...prev, { role: "assistant", text: "⚠️ No pude generar eso. ¿Podés reformularlo?" }]);
+                    }
+                  } catch {
+                    setPedidoMessages(prev => [...prev, { role: "assistant", text: "⚠️ Hubo un error. Intentá de nuevo." }]);
+                  } finally {
+                    setPedidoLoading(false);
+                    setTimeout(() => { pedidoChatRef.current?.scrollTo({ top: 9999, behavior: "smooth" }); }, 100);
+                  }
+                }}
+              >
+                {pedidoLoading ? "⏳" : "➤"}
+              </button>
             </div>
-          )}
+            <p style={{ fontSize: 11, color: "#bbb", margin: "6px 0 0", textAlign: "center" }}>Enter para enviar · Shift+Enter para nueva línea</p>
+          </div>
         </div>
       )}
 

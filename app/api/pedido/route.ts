@@ -11,29 +11,45 @@ const GEMINI_IMAGE_MODELS = [
   "gemini-3-pro-image",
 ];
 
+type ChatMessage = { role: "user" | "assistant"; content: string };
+
 export async function POST(req: NextRequest) {
   try {
-    const { pedido, childName, childAge, childGrade, childTheme, childCountry } = await req.json();
+    const { messages, childName, childAge, childGrade, childTheme, childCountry } = await req.json() as {
+      messages: ChatMessage[];
+      childName?: string;
+      childAge?: number;
+      childGrade?: number;
+      childTheme?: string;
+      childCountry?: string;
+    };
 
-    const context = `El pedido es para ${childName || "un niño"}, ${childAge || 8} años, ${childGrade ? `${childGrade}° grado` : "primaria"}, de ${childCountry || "Argentina"}.${childTheme ? ` Le encanta: ${childTheme}.` : ""}`;
+    if (!messages?.length) {
+      return NextResponse.json({ error: "Sin mensajes" }, { status: 400 });
+    }
 
-    // Detectar si el pedido pide una imagen
-    const wantsImage = IMAGE_KEYWORDS.some(k => pedido.toLowerCase().includes(k));
+    const lastUserMsg = messages[messages.length - 1]?.content || "";
+    const context = `Perfil del niño: ${childName || "sin nombre"}, ${childAge || 8} años, ${childGrade ? `${childGrade}° grado` : "primaria"}, de ${childCountry || "Argentina"}.${childTheme ? ` Tema favorito: ${childTheme}.` : ""}`;
 
-    if (wantsImage) {
-      // Intentar con Gemini imagen
+    const wantsImage = IMAGE_KEYWORDS.some(k => lastUserMsg.toLowerCase().includes(k));
+    const isRefinement = messages.length > 2; // hay historial previo
+
+    // Si pide imagen y no es refinamiento de texto → intentar Gemini
+    if (wantsImage && !isRefinement) {
       const apiKey = process.env.GEMINI_API_KEY;
       if (apiKey) {
+        // Construir contexto de conversación para Gemini
+        const conversationContext = messages.slice(0, -1).map(m => `${m.role === "user" ? "Usuario" : "Asistente"}: ${m.content}`).join("\n");
         const prompt = `${context}
-
-Pedido: ${pedido}
+${conversationContext ? `\nContexto previo:\n${conversationContext}\n` : ""}
+Pedido actual: ${lastUserMsg}
 
 Create a high-quality, colorful educational image for a primary school child.
-- Age-appropriate for ${childGrade ? `${childGrade}° grade` : "primary school"}
+- Age-appropriate for ${childGrade ? `${childGrade}° grade` : "primary school"} in ${childCountry || "Argentina"}
 - Visually engaging, clear labels in Spanish
 - Educational content accurate for ${childCountry || "Argentina"} curriculum
 - Child-friendly style, bright colors
-- Include a title in Spanish at the top`;
+- Include a descriptive title in Spanish`;
 
         for (const model of GEMINI_IMAGE_MODELS) {
           const res = await fetch(
@@ -53,47 +69,77 @@ Create a high-quality, colorful educational image for a primary school child.
           const imagePart = parts.find((p: { inlineData?: { data: string; mimeType: string } }) => p.inlineData);
           if (imagePart?.inlineData) {
             return NextResponse.json({
-              imageBase64: imagePart.inlineData.data,
-              mimeType: imagePart.inlineData.mimeType || "image/png",
+              reply: "Acá está la imagen que generé. ¿Querés que cambie algo, agregue más detalle o la adapte de alguna forma?",
+              result: {
+                imageBase64: imagePart.inlineData.data,
+                mimeType: imagePart.inlineData.mimeType || "image/png",
+              },
             });
           }
         }
       }
-      // Si Gemini falla, continúa con HTML via Claude
     }
 
-    // Generar HTML o texto con Claude
-    const systemPrompt = `Sos un asistente educativo para niños de primaria en ${childCountry || "Argentina"}. Generás materiales educativos de alta calidad, sin errores, adaptados al currículo local.`;
+    // Claude: texto/HTML con historial completo
+    const systemPrompt = `Sos un asistente educativo para niños de primaria de ${childCountry || "Argentina"}.
+${context}
+Generás materiales educativos de alta calidad, sin errores, adaptados al currículo local.
 
-    const userPrompt = `${context}
-
-Pedido del padre/madre: "${pedido}"
-
-Generá el material solicitado en formato HTML completo (desde <html> hasta </html>).
-Requisitos:
-- Contenido educativamente correcto para ${childGrade ? `${childGrade}° grado` : "primaria"} de ${childCountry || "Argentina"}
+Cuando el usuario pide un material (ejercicios, actividades, láminas de texto, sopas de letras, etc.):
+- Generá el contenido como HTML completo listo para imprimir (desde <html> hasta </html>)
+- Contenido correcto para ${childGrade ? `${childGrade}° grado` : "primaria"} de ${childCountry || "Argentina"}
 - Sin errores gramaticales ni conceptuales
-- Diseño limpio, listo para imprimir (fondo blanco, fuente clara)
-- Título descriptivo, contenido bien organizado
-- Si corresponde, incluí instrucciones claras para el niño
-${childTheme ? `- Podés incorporar referencias a ${childTheme} en los ejemplos` : ""}
+- Diseño limpio, fondo blanco, fuente clara, listo para imprimir
 
-Respondé SOLO con el HTML, sin backticks ni explicaciones.`;
+Cuando el usuario pide correcciones o cambios: aplicalos y devolvé el HTML actualizado.
+Cuando el usuario hace una pregunta simple: respondé en texto plano sin HTML.
 
-    const message = await client.messages.create({
+SIEMPRE respondé con este JSON exacto sin backticks:
+{
+  "reply": "mensaje breve al usuario explicando qué hiciste o preguntando si necesita cambios",
+  "result": {
+    "html": "HTML completo si generaste un documento, null si no",
+    "text": "texto plano si es solo una respuesta, null si generaste HTML"
+  }
+}`;
+
+    // Convertir historial al formato de Claude
+    const claudeMessages = messages.map(m => ({
+      role: m.role as "user" | "assistant",
+      content: m.role === "assistant"
+        ? m.content // el reply anterior
+        : m.content,
+    }));
+
+    const response = await client.messages.create({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 2000,
-      messages: [{ role: "user", content: userPrompt }],
+      max_tokens: 3000,
       system: systemPrompt,
+      messages: claudeMessages,
     });
 
-    const raw = message.content[0].type === "text" ? message.content[0].text : "";
-    const html = raw.replace(/```html|```/g, "").trim();
+    const raw = response.content[0].type === "text" ? response.content[0].text : "";
+    const cleaned = raw.replace(/```json|```/g, "").trim();
 
-    if (html.startsWith("<")) {
-      return NextResponse.json({ html });
+    let parsed: { reply?: string; result?: { html?: string; text?: string } };
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch {
+      // Si no parsea JSON, devolver como texto
+      return NextResponse.json({
+        reply: raw,
+        result: null,
+      });
     }
-    return NextResponse.json({ text: raw });
+
+    return NextResponse.json({
+      reply: parsed.reply || "Listo. ¿Querés que cambie algo?",
+      result: parsed.result?.html
+        ? { html: parsed.result.html }
+        : parsed.result?.text
+        ? { text: parsed.result.text }
+        : null,
+    });
 
   } catch (err) {
     console.error("[pedido] error:", err);
