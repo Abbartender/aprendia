@@ -46,11 +46,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(result);
     }
 
-    // ── PASO CLEAN: extraer solo texto impreso, ignorar trazos del niño
+    // ── PASO CLEAN: reproducir documento como HTML idéntico sin trazos
     if (step === "clean") {
       const message = await client.messages.create({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 800,
+        max_tokens: 2000,
         messages: [{
           role: "user",
           content: [
@@ -60,18 +60,24 @@ export async function POST(req: NextRequest) {
             },
             {
               type: "text",
-              text: `Esta imagen tiene texto impreso/oficial Y trazos o escritura hechos a mano por un niño (respuestas, líneas, marcas).
-Extraé ÚNICAMENTE el texto impreso original, ignorando completamente todo lo escrito o dibujado a mano por el niño.
-Conservá el formato y la estructura del documento original (títulos, numeración, columnas, etc.).
-Respondé SOLO con este JSON sin backticks:
-{"enunciado": "texto impreso original con su formato, sin nada escrito por el niño"}`,
+              text: `Analizá esta imagen de una hoja escolar. Tiene contenido impreso/oficial Y trazos o escritura hechos a mano por un niño (respuestas, líneas conectoras, marcas).
+
+Tu tarea: reproducir el documento impreso original en HTML, idéntico visualmente al original, IGNORANDO completamente todo lo que escribió o dibujó el niño.
+
+Reglas:
+- Usá las mismas fuentes aproximadas (bold para títulos, etc.)
+- Conservá el mismo tamaño relativo de texto
+- Conservá la misma disposición/layout (columnas, listas, tablas si hay)
+- Si hay imágenes o íconos (dados, figuras, etc.) reproducílos con emojis o unicode equivalente
+- NO incluyas nada escrito a mano por el niño
+- Respondé SOLO con HTML completo (desde <html> hasta </html>), sin backticks ni explicaciones`,
             },
           ],
         }],
       });
       const raw = message.content[0].type === "text" ? message.content[0].text : "";
-      const clean = raw.replace(/```json|```/g, "").trim();
-      return NextResponse.json(JSON.parse(clean));
+      const html = raw.replace(/```html|```/g, "").trim();
+      return NextResponse.json({ html });
     }
 
     // ── PASO 1: extraer texto de la imagen
