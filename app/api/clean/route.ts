@@ -29,7 +29,7 @@ async function tryGeminiClean(
                 },
               },
               {
-                text: "This is a school worksheet photo with a child's handwritten marks on top of the original printed content. Please remove ONLY the child's handwriting, pencil lines, crayon marks, and marker strokes. Keep the original printed worksheet exactly as it was — preserve all original colors, images, text, illustrations, and layout. The output should look like a brand new unused worksheet with full color, as if the child never touched it. Do NOT convert to black and white. Do NOT change contrast. Just remove the child's additions.",
+                text: "This is a school worksheet photo taken with a phone. Please do two things: (1) Correct the perspective so the worksheet appears flat and straight, as if scanned — remove any tilt, angle, or distortion from being photographed from the side. (2) Remove ONLY the child's handwriting, pencil lines, crayon marks, and marker strokes from on top of the printed content. Keep the original printed worksheet exactly as it was — preserve all original colors, images, text, illustrations, and layout. The output should look like a flat, clean, brand new unused worksheet with full color, ready to print.",
               },
             ],
           },
