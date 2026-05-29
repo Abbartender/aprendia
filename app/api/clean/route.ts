@@ -29,7 +29,7 @@ async function tryGeminiClean(
                 },
               },
               {
-                text: "Dame una imagen limpia de este archivo. Quitá todas las manchas, líneas de lápiz, marcas de fibra, colores y escritura del niño. Dejá la imagen lista para que otro niño pueda volver a completar la hoja. Conservá exactamente el contenido impreso original.",
+                text: "This is a school worksheet photo with a child's handwritten marks on top of the original printed content. Please remove ONLY the child's handwriting, pencil lines, crayon marks, and marker strokes. Keep the original printed worksheet exactly as it was — preserve all original colors, images, text, illustrations, and layout. The output should look like a brand new unused worksheet with full color, as if the child never touched it. Do NOT convert to black and white. Do NOT change contrast. Just remove the child's additions.",
               },
             ],
           },
