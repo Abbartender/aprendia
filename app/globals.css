@@ -812,6 +812,115 @@ nav {
   color: #fff;
 }
 
+/* Voice option (modal) */
+.voice-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 10px;
+  border-radius: var(--r-md);
+  border: 2.5px solid rgba(var(--ink-rgb),.08);
+  background: var(--bg);
+  cursor: pointer;
+  transition: all .15s;
+  color: var(--ink);
+}
+.voice-option:hover { border-color: var(--sky); }
+.voice-option.selected {
+  background: color-mix(in srgb, var(--sky) 10%, white);
+  border-color: var(--sky);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sky) 20%, transparent);
+}
+
+/* Theme option (modal) */
+.theme-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border-radius: var(--r-md);
+  border: 2.5px solid rgba(var(--ink-rgb),.07);
+  background: var(--bg);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: .72rem;
+  color: var(--soft);
+  cursor: pointer;
+  transition: all .15s;
+}
+.theme-option .theme-emoji { font-size: 1.4rem; }
+.theme-option:hover { border-color: var(--sky); color: var(--ink); }
+.theme-option.selected {
+  background: color-mix(in srgb, var(--coral) 10%, white);
+  border-color: var(--coral);
+  color: var(--ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--coral) 20%, transparent);
+}
+
+/* Custom theme row */
+.custom-theme-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  border: 2.5px solid rgba(var(--ink-rgb),.07);
+  background: var(--bg);
+  cursor: pointer;
+  transition: all .15s;
+}
+.custom-theme-row.active {
+  border-color: var(--coral);
+  background: color-mix(in srgb, var(--coral) 6%, white);
+}
+.custom-emoji-input {
+  width: 36px;
+  border: none;
+  background: transparent;
+  font-size: 1.3rem;
+  text-align: center;
+  outline: none;
+}
+
+/* Modal actions */
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+.btn-cancel {
+  flex: 1;
+  padding: 13px;
+  border-radius: var(--r-lg);
+  border: 2px solid rgba(var(--ink-rgb),.10);
+  background: transparent;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: .95rem;
+  color: var(--soft);
+  cursor: pointer;
+  transition: all .15s;
+}
+.btn-cancel:hover { border-color: rgba(var(--ink-rgb),.25); color: var(--ink); }
+.btn-save {
+  flex: 2;
+  padding: 13px;
+  border-radius: var(--r-lg);
+  border: none;
+  background: var(--coral);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: .95rem;
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--coral-dark);
+  transition: all .12s;
+}
+.btn-save:hover { filter: brightness(1.04); }
+.btn-save:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--coral-dark); }
+
 /* ----------------------------------------------------------------
    11. THEME DECORATION
    ---------------------------------------------------------------- */

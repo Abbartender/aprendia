@@ -810,25 +810,6 @@ export default function Home() {
             <button className="btn-add-profile" onClick={() => setModalOpen(true)}>+ Agregar niño</button>
           </div>
 
-          {/* Recent tasks */}
-          <p className="section-title">Tareas recientes</p>
-          <div className="tasks-grid">
-            <div className="task-card" onClick={() => loadDemo("math")}>
-              <div className="task-card-badge badge-math">🔢 Matemática</div>
-              <h3>Comparamos números</h3>
-              <p>10 de abril · Tomás</p>
-            </div>
-            <div className="task-card" onClick={() => loadDemo("lang")}>
-              <div className="task-card-badge badge-lang">📖 Lengua</div>
-              <h3>Sinónimos y antónimos</h3>
-              <p>12 de noviembre · Renata</p>
-            </div>
-            <div className="task-card" onClick={() => loadDemo("sci")}>
-              <div className="task-card-badge badge-sci">🔬 Ciencias</div>
-              <h3>El agua en Argentina 1810</h3>
-              <p>20 de mayo · Tomás</p>
-            </div>
-          </div>
         </div>
       )}
 
@@ -1182,7 +1163,21 @@ export default function Home() {
 
             <div className="modal-actions">
               <button className="btn-cancel" onClick={() => setModalOpen(false)}>Cancelar</button>
-              <button className="btn-save" onClick={saveProfile}>Guardar perfil ✨</button>
+              {profiles.find(p => p.name === formName) && (
+                <button
+                  className="btn-cancel"
+                  style={{ color: "var(--coral)", borderColor: "var(--coral)" }}
+                  onClick={() => {
+                    const updated = profiles.filter(p => p.name !== formName);
+                    setProfiles(updated);
+                    localStorage.setItem("aprendia_profiles", JSON.stringify(updated));
+                    if (activeProfile?.name === formName) setActiveProfile(updated[0] || null);
+                    setModalOpen(false);
+                    showToast(`🗑️ Perfil de ${formName} eliminado`);
+                  }}
+                >Eliminar</button>
+              )}
+              <button className="btn-save" onClick={saveProfile}>Guardar ✨</button>
             </div>
           </div>
         </div>
