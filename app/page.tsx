@@ -30,7 +30,9 @@ interface TaskData {
   tags?: { text: string; css: string }[];
 }
 
-type Screen = "home" | "processing" | "review" | "pizarra" | "libre";
+type Screen = "lock" | "home" | "processing" | "review" | "pizarra" | "libre";
+
+const APP_PIN = "1234"; // ← cambiá esta clave
 
 // ─── Constants ───────────────────────────────────────────────
 
@@ -90,7 +92,9 @@ const DEMO: Record<string, TaskData> = {
 // ─── Main Component ──────────────────────────────────────────
 
 export default function Home() {
-  const [screen, setScreen] = useState<Screen>("home");
+  const [screen, setScreen] = useState<Screen>("lock");
+  const [pin, setPin] = useState("");
+  const [pinError, setPinError] = useState(false);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [activeProfile, setActiveProfile] = useState<Profile | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -583,6 +587,128 @@ export default function Home() {
   const profileEmoji = activeProfile
     ? activeProfile.themeEmoji || THEME_EMOJIS[activeProfile.theme] || "👤"
     : "👤";
+
+  function handlePin(digit: string) {
+    const next = pin + digit;
+    setPin(next);
+    setPinError(false);
+    if (next.length === APP_PIN.length) {
+      if (next === APP_PIN) {
+        setScreen("home");
+        setPin("");
+      } else {
+        setPinError(true);
+        setTimeout(() => { setPin(""); setPinError(false); }, 700);
+      }
+    }
+  }
+
+  if (screen === "lock") {
+    return (
+      <div style={{
+        minHeight: "100vh",
+        background: "linear-gradient(160deg, #FFF6EC 0%, #FFF0E0 50%, #FFE8D0 100%)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px",
+        fontFamily: "var(--font-body)",
+      }}>
+        {/* Decoración de fondo */}
+        <div style={{ position: "fixed", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }}>
+          {["🦕","🚀","⭐","🎨","🌿","🎵","🐬","⚽"].map((e, i) => (
+            <div key={i} style={{
+              position: "absolute",
+              fontSize: `${2 + (i % 3)}rem`,
+              opacity: 0.07,
+              top: `${10 + (i * 12) % 80}%`,
+              left: `${5 + (i * 13) % 90}%`,
+              transform: `rotate(${i * 45}deg)`,
+            }}>{e}</div>
+          ))}
+        </div>
+
+        {/* Card central */}
+        <div style={{
+          position: "relative", zIndex: 1,
+          background: "#fff",
+          borderRadius: 32,
+          padding: "40px 36px",
+          maxWidth: 360,
+          width: "100%",
+          textAlign: "center",
+          boxShadow: "0 8px 0 rgba(44,38,71,.06), 0 24px 48px -16px rgba(44,38,71,.18)",
+        }}>
+          {/* Logo */}
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "1.8rem", color: "var(--ink)", marginBottom: 4 }}>
+            Aprend<span style={{ color: "var(--coral)" }}>·</span>IA
+          </div>
+          <div style={{ fontSize: "3.2rem", margin: "16px 0 8px" }}>📚</div>
+          <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.3rem", color: "var(--ink)", marginBottom: 6 }}>
+            ¡Hola! Soy tu ayudante de tareas
+          </h2>
+          <p style={{ fontSize: ".9rem", color: "var(--soft)", marginBottom: 28 }}>
+            Ingresá la clave para empezar
+          </p>
+
+          {/* Puntos PIN */}
+          <div style={{ display: "flex", justifyContent: "center", gap: 14, marginBottom: 28 }}>
+            {Array.from({ length: APP_PIN.length }).map((_, i) => (
+              <div key={i} style={{
+                width: 18, height: 18,
+                borderRadius: "50%",
+                background: pinError ? "var(--coral)" : i < pin.length ? "var(--sky)" : "rgba(44,38,71,.12)",
+                transition: "background .2s",
+                transform: pinError ? "scale(1.2)" : "scale(1)",
+              }} />
+            ))}
+          </div>
+
+          {/* Teclado numérico */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+            {["1","2","3","4","5","6","7","8","9","","0","⌫"].map((d, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  if (d === "⌫") { setPin(p => p.slice(0, -1)); setPinError(false); }
+                  else if (d !== "") handlePin(d);
+                }}
+                disabled={d === ""}
+                style={{
+                  height: 62,
+                  borderRadius: 16,
+                  border: "2px solid rgba(44,38,71,.07)",
+                  background: d === "" ? "transparent" : d === "⌫" ? "rgba(44,38,71,.06)" : "#fff",
+                  fontFamily: "var(--font-display)",
+                  fontWeight: 700,
+                  fontSize: "1.3rem",
+                  color: "var(--ink)",
+                  cursor: d === "" ? "default" : "pointer",
+                  boxShadow: d === "" ? "none" : "0 3px 0 rgba(44,38,71,.08)",
+                  transition: "transform .1s",
+                }}
+                onMouseDown={e => (e.currentTarget.style.transform = "translateY(2px)")}
+                onMouseUp={e => (e.currentTarget.style.transform = "")}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+
+          {pinError && (
+            <p style={{ color: "var(--coral)", fontWeight: 700, fontSize: ".85rem", marginTop: 16 }}>
+              Clave incorrecta, intentá de nuevo
+            </p>
+          )}
+        </div>
+
+        <p style={{ marginTop: 20, fontSize: ".75rem", color: "rgba(44,38,71,.3)", position: "relative", zIndex: 1 }}>
+          Aprend·IA · v2
+        </p>
+      </div>
+    );
+  }
 
   return (
     <>
