@@ -248,12 +248,26 @@ export default function Home() {
     }, delay);
   }
 
+  async function fetchWithRetry(url: string, options: RequestInit, retries = 2): Promise<Response> {
+    for (let i = 0; i <= retries; i++) {
+      try {
+        const res = await fetch(url, options);
+        if (res.ok) return res;
+        if (i < retries) await new Promise(r => setTimeout(r, 1200));
+      } catch {
+        if (i < retries) await new Promise(r => setTimeout(r, 1200));
+        else throw new Error("network error");
+      }
+    }
+    throw new Error("max retries");
+  }
+
   async function analyzeWithClaude(imageData: string) {
     try {
       const base64 = imageData.split(",")[1];
       const mimeType = imageData.split(";")[0].split(":")[1];
 
-      const res = await fetch("/api/analyze", {
+      const res = await fetchWithRetry("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageBase64: base64, mimeType }),
