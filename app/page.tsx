@@ -332,7 +332,9 @@ export default function Home() {
         }
       }
 
-      // 2️⃣ Fallback: filtro canvas (solo borra lápiz gris neutro)
+      // 2️⃣ Fallback: filtro canvas por umbral de brillo
+      // Lógica: texto impreso es muy oscuro (<100 brillo), todo lo demás → blanco
+      // Esto borra lápiz, fibra, marcadores, crayón — sin importar el color
       const result = await new Promise<string>((resolve, reject) => {
         const img = new Image();
         img.onload = () => {
@@ -347,19 +349,23 @@ export default function Home() {
           for (let i = 0; i < d.length; i += 4) {
             const r = d[i], g = d[i+1], b = d[i+2];
             const brightness = (r + g + b) / 3;
-            const saturation = Math.max(r, g, b) - Math.min(r, g, b);
-            if (brightness > 110 && brightness < 220 && saturation < 20) {
+            if (brightness > 100) {
+              // Todo lo que no sea muy oscuro → blanco
+              // Cubre: lápiz (gris), fibra verde, crayón morado, marcador rojo, etc.
               d[i] = 255; d[i+1] = 255; d[i+2] = 255;
+            } else {
+              // Texto oscuro impreso → negro puro para mayor nitidez
+              d[i] = 0; d[i+1] = 0; d[i+2] = 0;
             }
           }
           ctx.putImageData(imageData, 0, 0);
-          resolve(canvas.toDataURL("image/jpeg", 0.92));
+          resolve(canvas.toDataURL("image/jpeg", 0.95));
         };
         img.onerror = reject;
         img.src = taskData.imageData!;
       });
       setCleanedImage(result);
-      showToast("✅ Imagen procesada (solo lápiz gris)");
+      showToast("✅ Imagen limpia lista para descargar");
     } catch {
       showToast("⚠️ No se pudo limpiar");
     } finally {
