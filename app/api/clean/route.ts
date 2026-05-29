@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 // Intentamos dos modelos: el de preview de imagen y el experimental
 const MODELS = [
+  "gemini-2.0-flash-exp-image-generation",
   "gemini-2.0-flash-preview-image-generation",
-  "gemini-2.0-flash-exp",
 ];
 
 async function tryGeminiClean(apiKey: string, imageBase64: string, mimeType: string, model: string, errors?: string[]) {
