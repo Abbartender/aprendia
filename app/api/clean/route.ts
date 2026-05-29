@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const MODELS = [
-  "gemini-2.0-flash",
-  "gemini-2.0-flash-exp",
-  "gemini-2.0-flash-exp-image-generation",
+  "gemini-2.5-flash-image",
+  "gemini-3.1-flash-image",
+  "gemini-3-pro-image",
 ];
 
 async function tryGeminiClean(
