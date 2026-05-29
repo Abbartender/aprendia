@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const ELEVEN_VOICES: Record<string, string> = {
-  female: "XrExE9yKIg1WjnnlVkGX", // Matilda
-  male: "bIHbv24MWmeRgasZH58o",   // Will
+  female: "onwK4e9ZLuTAKqWW03F9", // Domi — nativa español latinoamericano
+  male:   "AZnzlk1XvdvUeBnXmlld", // Fin — multilingual con acento neutro
 };
 
-const ELEVEN_MODEL = "eleven_flash_v2_5";
+const ELEVEN_MODEL = "eleven_multilingual_v2";
 
 export async function POST(req: NextRequest) {
   try {
