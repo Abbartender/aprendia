@@ -844,8 +844,20 @@ export default function Home() {
                   key={p.name}
                   className={`profile-chip${activeProfile?.name === p.name ? " active" : ""}`}
                   onClick={() => setActiveProfile(p)}
+                  style={{ position: "relative", paddingRight: 28 }}
                 >
                   <span className="chip-emoji">{emoji}</span>{p.name}
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!confirm(`¿Borrar a ${p.name}?`)) return;
+                      const updated = profiles.filter(x => x.name !== p.name);
+                      setProfiles(updated);
+                      localStorage.setItem("aprendia_profiles", JSON.stringify(updated));
+                      if (activeProfile?.name === p.name) setActiveProfile(updated[0] || null);
+                    }}
+                    style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 11, opacity: 0.5, cursor: "pointer", lineHeight: 1 }}
+                  >✕</span>
                 </div>
               );
             })}
