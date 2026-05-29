@@ -963,23 +963,21 @@ export default function Home() {
                   onClick={() => { setCleanedHtml(null); cleanTraces(); }}
                   disabled={cleanLoading}
                 >
-                  {cleanLoading ? "⏳ Limpiando..." : "🧹 Limpiar trazos del niño"}
+                  {cleanLoading ? "⏳ Procesando..." : "⬇️ Descargar actividad original"}
                 </button>
               )}
 
               {/* IMAGEN LIMPIA (Gemini) */}
               {cleanedImage && (
-                <div style={{ marginTop: 14, border: "2px solid var(--grass)", borderRadius: 16, overflow: "hidden" }}>
-                  <div style={{ background: "var(--grass)", padding: "8px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ color: "#fff", fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13 }}>✅ Imagen limpia</span>
-                    <a
-                      href={cleanedImage}
-                      download="tarea-limpia.jpg"
-                      style={{ background: "rgba(255,255,255,.25)", borderRadius: 20, padding: "5px 12px", color: "#fff", fontWeight: 700, fontSize: 12, textDecoration: "none" }}
-                    >⬇️ Descargar JPG</a>
-                  </div>
+                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={cleanedImage} alt="Tarea limpia" style={{ width: "100%", display: "block" }} />
+                  <img src={cleanedImage} alt="Actividad limpia" style={{ width: "100%", borderRadius: 12, display: "block", border: "2px solid var(--grass)" }} />
+                  <a
+                    href={cleanedImage}
+                    download="actividad-original.jpg"
+                    className="btn-action btn-green"
+                    style={{ width: "100%", justifyContent: "center", textDecoration: "none" }}
+                  >⬇️ Descargar JPG</a>
                 </div>
               )}
 
