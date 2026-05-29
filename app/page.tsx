@@ -313,9 +313,26 @@ export default function Home() {
     setCleanedImage(null);
     setCleanedHtml(null);
     try {
-      // Procesamiento local con Canvas: elimina píxeles grises (trazos de lápiz)
-      // El lápiz es gris medio (R,G,B entre 60-210 y similares entre sí)
-      // El fondo es blanco (>220) y el texto impreso es negro (<60)
+      const base64 = taskData.imageData.split(",")[1];
+      const mimeType = taskData.imageData.split(";")[0].split(":")[1];
+
+      // 1️⃣ Intentar con Gemini (borra lápiz, fibra, marcadores — IA semántica)
+      const res = await fetch("/api/clean", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: base64, mimeType }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.imageBase64) {
+          setCleanedImage(`data:${data.mimeType || "image/png"};base64,${data.imageBase64}`);
+          showToast("✅ Imagen limpia lista para descargar");
+          return;
+        }
+      }
+
+      // 2️⃣ Fallback: filtro canvas (solo borra lápiz gris neutro)
       const result = await new Promise<string>((resolve, reject) => {
         const img = new Image();
         img.onload = () => {
@@ -330,13 +347,7 @@ export default function Home() {
           for (let i = 0; i < d.length; i += 4) {
             const r = d[i], g = d[i+1], b = d[i+2];
             const brightness = (r + g + b) / 3;
-            const maxC = Math.max(r, g, b);
-            const minC = Math.min(r, g, b);
-            const saturation = maxC - minC;
-            // Lápiz sobre papel: gris claro/medio, canales muy similares entre sí
-            // brightness 110-220 = zona de lápiz sobre papel blanco
-            // saturation < 20 = neutro (no madera marrón, no color)
-            // Excluimos zonas muy oscuras (texto impreso, madera) y muy claras (fondo)
+            const saturation = Math.max(r, g, b) - Math.min(r, g, b);
             if (brightness > 110 && brightness < 220 && saturation < 20) {
               d[i] = 255; d[i+1] = 255; d[i+2] = 255;
             }
@@ -348,7 +359,7 @@ export default function Home() {
         img.src = taskData.imageData!;
       });
       setCleanedImage(result);
-      showToast("✅ Imagen limpia lista para descargar");
+      showToast("✅ Imagen procesada (solo lápiz gris)");
     } catch {
       showToast("⚠️ No se pudo limpiar");
     } finally {
