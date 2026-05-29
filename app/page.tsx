@@ -314,19 +314,36 @@ export default function Home() {
       const res = await fetchWithRetry("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imageBase64: base64,
-          mimeType,
-          step: "clean",
-        }),
+        body: JSON.stringify({ imageBase64: base64, mimeType, step: "clean" }),
       });
       if (res.ok) {
         const data = await res.json();
-        setReviewText(data.enunciado || reviewText);
-        showToast("✅ Trazos eliminados");
+        const texto = data.enunciado || "";
+        // Abre ventana de impresión con el documento limpio
+        const win = window.open("", "_blank");
+        if (!win) return;
+        win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
+          <title>${taskData.title || "Tarea limpia"}</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap');
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body { font-family: 'Nunito', Arial, sans-serif; padding: 40px; max-width: 700px; margin: 0 auto; color: #111; }
+            h1 { font-size: 22px; margin-bottom: 6px; }
+            h2 { font-size: 14px; color: #666; font-weight: normal; margin-bottom: 24px; }
+            pre { font-family: inherit; font-size: 16px; line-height: 2; white-space: pre-wrap; }
+            @media print { body { padding: 20px; } }
+          </style>
+        </head><body>
+          <h1>${taskData.title || "Tarea"}</h1>
+          <h2>${taskData.subject || ""}</h2>
+          <pre>${texto}</pre>
+          <script>setTimeout(() => { window.print(); }, 400 );<\/script>
+        </body></html>`);
+        win.document.close();
+        showToast("✅ Listo para imprimir");
       }
     } catch {
-      showToast("⚠️ No se pudo limpiar la imagen");
+      showToast("⚠️ No se pudo limpiar");
     } finally {
       setCleanLoading(false);
     }
