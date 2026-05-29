@@ -120,6 +120,11 @@ export default function Home() {
   const [cleanedHtml, setCleanedHtml] = useState<string | null>(null);
   const [cleanedImage, setCleanedImage] = useState<string | null>(null);
 
+  // ── Freemium ──────────────────────────────────────────────
+  // TODO: reemplazar con verificación real de Stripe
+  const isPremium = false;
+  const [showUpgrade, setShowUpgrade] = useState(false);
+
   // review screen
   const [reviewText, setReviewText] = useState("");
   const [zoom, setZoom] = useState(1);
@@ -591,6 +596,7 @@ export default function Home() {
 
   // ── Export MP3
   async function exportAudio() {
+    if (!isPremium) { setShowUpgrade(true); return; }
     const summary = scriptText.trim();
     if (!summary) { showToast("⚠️ Escribí algo en el script primero"); return; }
     setExportLoading(true);
@@ -972,7 +978,7 @@ export default function Home() {
                 <button
                   className="btn-action btn-secondary"
                   style={{ width: "100%", justifyContent: "center", marginTop: 10 }}
-                  onClick={() => { setCleanedHtml(null); cleanTraces(); }}
+                  onClick={() => { if (!isPremium) { setShowUpgrade(true); return; } setCleanedHtml(null); cleanTraces(); }}
                   disabled={cleanLoading}
                 >
                   {cleanLoading ? "⏳ Procesando..." : "⬇️ Descargar actividad original"}
@@ -1194,6 +1200,39 @@ export default function Home() {
       )}
 
       {/* ══ PROFILE MODAL ══ */}
+      {/* ── MODAL UPGRADE ── */}
+      {showUpgrade && (
+        <div className="modal-overlay" onClick={() => setShowUpgrade(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ textAlign: "center", maxWidth: 380 }}>
+            <div style={{ fontSize: 56, marginBottom: 8 }}>🔓</div>
+            <h2 style={{ fontFamily: "Fredoka One, cursive", color: "var(--primary)", fontSize: 24, marginBottom: 8 }}>
+              Función Premium
+            </h2>
+            <p style={{ color: "#666", fontSize: 15, marginBottom: 20, lineHeight: 1.5 }}>
+              Descargar audio y limpiar la actividad son funciones del plan completo.
+            </p>
+            <div style={{ background: "var(--sky-light, #e8f4fd)", borderRadius: 16, padding: "16px 20px", marginBottom: 20 }}>
+              <div style={{ fontFamily: "Fredoka One, cursive", fontSize: 18, color: "var(--sky)", marginBottom: 4 }}>Plan Gratis</div>
+              <div style={{ fontSize: 13, color: "#555" }}>✅ Pizarra libre<br/>✅ Reproducir audio<br/>✅ Analizar tarea</div>
+            </div>
+            <div style={{ background: "var(--primary)", borderRadius: 16, padding: "16px 20px", marginBottom: 24 }}>
+              <div style={{ fontFamily: "Fredoka One, cursive", fontSize: 18, color: "#fff", marginBottom: 4 }}>Plan Full ✨</div>
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,.85)" }}>✅ Todo lo anterior<br/>🎧 Descargar audio MP3<br/>🧹 Limpiar actividad original</div>
+            </div>
+            <button
+              className="btn-action btn-primary"
+              style={{ width: "100%", justifyContent: "center", fontSize: 16, padding: "14px", marginBottom: 10 }}
+              onClick={() => { showToast("💳 Próximamente — pagos en camino!"); setShowUpgrade(false); }}
+            >
+              ✨ Desbloquear todo
+            </button>
+            <button className="btn-cancel" onClick={() => setShowUpgrade(false)} style={{ width: "100%" }}>
+              Ahora no
+            </button>
+          </div>
+        </div>
+      )}
+
       {modalOpen && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setModalOpen(false); }}>
           <div className="modal">
