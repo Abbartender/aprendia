@@ -118,6 +118,7 @@ export default function Home() {
   const [reviewLoading, setReviewLoading] = useState(false);
   const [cleanLoading, setCleanLoading] = useState(false);
   const [cleanedHtml, setCleanedHtml] = useState<string | null>(null);
+  const [cleanedImage, setCleanedImage] = useState<string | null>(null);
 
   // review screen
   const [reviewText, setReviewText] = useState("");
@@ -309,18 +310,38 @@ export default function Home() {
   async function cleanTraces() {
     if (!taskData?.imageData) return;
     setCleanLoading(true);
+    setCleanedImage(null);
+    setCleanedHtml(null);
     try {
       const base64 = taskData.imageData.split(",")[1];
       const mimeType = taskData.imageData.split(";")[0].split(":")[1];
-      const res = await fetchWithRetry("/api/analyze", {
+
+      // Intentar con Gemini primero (imagen real limpia)
+      const res = await fetch("/api/clean", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: base64, mimeType }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.imageBase64) {
+          setCleanedImage(`data:${data.mimeType};base64,${data.imageBase64}`);
+          showToast("✅ Imagen limpia lista para descargar");
+          return;
+        }
+      }
+
+      // Fallback: HTML reconstruction con Claude
+      const res2 = await fetchWithRetry("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageBase64: base64, mimeType, step: "clean" }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        setCleanedHtml(data.html || "");
-        showToast("✅ Documento limpio — revisá abajo");
+      if (res2.ok) {
+        const data2 = await res2.json();
+        setCleanedHtml(data2.html || "");
+        showToast("✅ Documento limpio generado");
       }
     } catch {
       showToast("⚠️ No se pudo limpiar");
@@ -950,7 +971,23 @@ export default function Home() {
                 </button>
               )}
 
-              {/* VISTA PREVIA LIMPIA */}
+              {/* IMAGEN LIMPIA (Gemini) */}
+              {cleanedImage && (
+                <div style={{ marginTop: 14, border: "2px solid var(--grass)", borderRadius: 16, overflow: "hidden" }}>
+                  <div style={{ background: "var(--grass)", padding: "8px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ color: "#fff", fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13 }}>✅ Imagen limpia</span>
+                    <a
+                      href={cleanedImage}
+                      download="tarea-limpia.png"
+                      style={{ background: "rgba(255,255,255,.25)", borderRadius: 20, padding: "5px 12px", color: "#fff", fontWeight: 700, fontSize: 12, textDecoration: "none" }}
+                    >⬇️ Descargar imagen</a>
+                  </div>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={cleanedImage} alt="Tarea limpia" style={{ width: "100%", display: "block" }} />
+                </div>
+              )}
+
+              {/* VISTA PREVIA LIMPIA (fallback HTML) */}
               {cleanedHtml !== null && (
                 <div style={{ marginTop: 14, border: "2px solid var(--grass)", borderRadius: 16, overflow: "hidden" }}>
                   <div style={{ background: "var(--grass)", padding: "8px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
