@@ -29,7 +29,31 @@ async function tryGeminiClean(
                 },
               },
               {
-                text: "This is a school worksheet photo taken with a phone. Please do two things: (1) Correct the perspective so the worksheet appears flat and straight, as if scanned — remove any tilt, angle, or distortion from being photographed from the side. (2) Remove ONLY the child's handwriting, pencil lines, crayon marks, and marker strokes from on top of the printed content. Keep the original printed worksheet exactly as it was — preserve all original colors, images, text, illustrations, and layout. The output should look like a flat, clean, brand new unused worksheet with full color, ready to print.",
+                text: `You are an image editor specialized in removing student marks from school worksheets.
+
+TASK: Remove ALL marks made by the student/child from this worksheet image, so it looks brand new and ready for another student to complete.
+
+What to REMOVE (everything the child added):
+- All pencil marks and lines
+- All pen marks and lines
+- All crayon coloring and shading
+- All marker strokes
+- All connecting lines drawn between elements
+- All circled, underlined or crossed out items
+- Any written answers or numbers added by the child
+- Any drawings or doodles added by the child
+
+What to KEEP (original printed content only):
+- All printed text, titles, instructions
+- All printed numbers, letters
+- All printed illustrations and images
+- All printed boxes, grids, tables
+- All printed dots, dashes, decorative elements
+- Original colors of the printed worksheet
+
+ALSO: Correct the perspective so the page appears flat and straight as if scanned.
+
+The final image must look like a BRAND NEW, UNUSED worksheet fresh from the printer, with all original colors preserved. No student marks whatsoever.`,
               },
             ],
           },
