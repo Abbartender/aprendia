@@ -169,6 +169,8 @@ export default function Home() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const wordIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const bbTextRef = useRef<HTMLDivElement>(null);
+  const cleanResultRef = useRef<HTMLDivElement>(null);
+  const [fontSize, setFontSize] = useState(18); // tamaño letra pizarra
 
   // ── Load profiles from localStorage
   useEffect(() => {
@@ -379,6 +381,7 @@ export default function Home() {
       if (res.ok && data.imageBase64) {
         setCleanedImage(`data:${data.mimeType || "image/png"};base64,${data.imageBase64}`);
         showToast("✅ Imagen limpia lista para descargar");
+        setTimeout(() => cleanResultRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 200);
         return;
       }
 
@@ -1337,7 +1340,7 @@ export default function Home() {
 
               {/* IMAGEN LIMPIA (Gemini) */}
               {cleanedImage && (
-                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                <div ref={cleanResultRef} style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={cleanedImage} alt="Actividad limpia" style={{ width: "100%", borderRadius: 12, display: "block", border: "2px solid var(--grass)" }} />
                   <a
@@ -1430,6 +1433,12 @@ export default function Home() {
                   >{icon}</button>
                 ))}
               </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 11, color: "var(--ink)", opacity: 0.5, fontWeight: 600 }}>A</span>
+                <input type="range" min={14} max={32} value={fontSize} onChange={e => setFontSize(Number(e.target.value))}
+                  style={{ width: 70, accentColor: "var(--primary)", cursor: "pointer" }} title="Tamaño de letra" />
+                <span style={{ fontSize: 15, color: "var(--ink)", opacity: 0.5, fontWeight: 700 }}>A</span>
+              </div>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <span style={{ fontSize: 13, color: "var(--ink)", fontWeight: 600, opacity: 0.6 }}>Actividad extra:</span>
                 <button
@@ -1482,7 +1491,7 @@ export default function Home() {
                       const newText = e.currentTarget.innerText;
                       setPizarraText(newText);
                     }}
-                    style={{ outline: "none", minHeight: 40, cursor: "text", textTransform: textStyle === "uppercase" ? "uppercase" : textStyle === "lowercase" ? "lowercase" : "none", fontStyle: textStyle === "italic" ? "italic" : "normal", letterSpacing: textStyle === "uppercase" ? "0.04em" : "normal" }}
+                    style={{ outline: "none", minHeight: 40, cursor: "text", textTransform: textStyle === "uppercase" ? "uppercase" : textStyle === "lowercase" ? "lowercase" : "none", fontStyle: textStyle === "italic" ? "italic" : "normal", letterSpacing: textStyle === "uppercase" ? "0.04em" : "normal", fontSize: fontSize }}
                     title="Hacé click para editar el texto de la pizarra"
                   />
                   <div className="audio-bar">
