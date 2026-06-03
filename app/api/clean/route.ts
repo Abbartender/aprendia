@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const MODELS = [
-  "gemini-2.5-flash-image",
   "gemini-3.1-flash-image",
   "gemini-3-pro-image",
+  "gemini-2.5-flash-image",
 ];
 
 async function tryGeminiClean(
@@ -29,31 +29,15 @@ async function tryGeminiClean(
                 },
               },
               {
-                text: `You are an image editor specialized in removing student marks from school worksheets.
+                text: `Inpainting task: I need you to digitally erase all handwritten student marks from this school worksheet photo, leaving only the original printed content.
 
-TASK: Remove ALL marks made by the student/child from this worksheet image, so it looks brand new and ready for another student to complete.
+The worksheet has TWO layers:
+1. PRINTED layer (keep everything): pre-printed text, numbers, illustrations, boxes, grids, dots, colors — this is what was there before any student touched it
+2. HANDWRITTEN layer (erase completely): everything a child wrote, drew, colored or marked on top — pencil lines, pen strokes, crayon fills, marker lines, connecting lines, written answers, circles, underlines, crossed items
 
-What to REMOVE (everything the child added):
-- All pencil marks and lines
-- All pen marks and lines
-- All crayon coloring and shading
-- All marker strokes
-- All connecting lines drawn between elements
-- All circled, underlined or crossed out items
-- Any written answers or numbers added by the child
-- Any drawings or doodles added by the child
+Your output must show ONLY the printed layer, as if the worksheet just came out of the printer — pristine, untouched, full color, ready for a new student to complete.
 
-What to KEEP (original printed content only):
-- All printed text, titles, instructions
-- All printed numbers, letters
-- All printed illustrations and images
-- All printed boxes, grids, tables
-- All printed dots, dashes, decorative elements
-- Original colors of the printed worksheet
-
-ALSO: Correct the perspective so the page appears flat and straight as if scanned.
-
-The final image must look like a BRAND NEW, UNUSED worksheet fresh from the printer, with all original colors preserved. No student marks whatsoever.`,
+Additionally: straighten and deskew the image so the page appears flat, as if scanned on a flatbed scanner.`,
               },
             ],
           },
