@@ -1378,12 +1378,18 @@ export default function Home() {
             {/* TEXTO EDITABLE */}
             <div className="panel-card" style={{ display: "flex", flexDirection: "column" }}>
               <div className="panel-title">✏️ Enunciado detectado — editá si hay errores</div>
+              {!reviewText && (
+                <div style={{ background: "#fff8e1", border: "1px solid #ffe082", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#7c6000", marginBottom: 8 }}>
+                  ⚠️ No se detectó texto automáticamente. Escribí vos el tema o consigna de la tarea.
+                </div>
+              )}
               <textarea
                 className="script-editor"
-                style={{ flex: 1, minHeight: 380, fontSize: 16 }}
+                style={{ flex: 1, minHeight: 300, fontSize: 16 }}
                 value={reviewText}
                 onChange={(e) => setReviewText(e.target.value)}
-                placeholder="El texto detectado aparece aquí..."
+                placeholder="Ej: Escribir los números que van antes y después del número del medio..."
+                autoFocus={!reviewText}
               />
               <div style={{ position: "sticky", bottom: 0, background: "var(--surface)", paddingTop: 12, marginTop: 12 }}>
                 <button
