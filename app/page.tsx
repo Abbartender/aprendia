@@ -373,21 +373,24 @@ export default function Home() {
         body: JSON.stringify({ imageBase64: base64, mimeType }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.imageBase64) {
-          setCleanedImage(`data:${data.mimeType || "image/png"};base64,${data.imageBase64}`);
-          showToast("✅ Imagen limpia lista para descargar");
-          return;
-        }
+      // Leer body UNA sola vez
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.imageBase64) {
+        setCleanedImage(`data:${data.mimeType || "image/png"};base64,${data.imageBase64}`);
+        showToast("✅ Imagen limpia lista para descargar");
+        return;
       }
 
-      const errData = await res.json().catch(() => ({}));
-      const detail = String(errData.details?.[0] || errData.error || "");
-      if (detail.includes("429") || detail.includes("quota")) {
-        showToast("⚠️ Cuota de Gemini agotada. Habilitá billing en Google AI Studio.");
+      // Mostrar error exacto
+      const detail = String(data.details?.[0] || data.error || "");
+      console.error("[cleanTraces] error:", detail);
+      if (detail.includes("429") || detail.includes("quota") || detail.includes("RESOURCE_EXHAUSTED")) {
+        showToast("⚠️ Cuota de Gemini agotada — revisá billing en aistudio.google.com");
+      } else if (detail.includes("404")) {
+        showToast("⚠️ Modelo de imagen no disponible");
       } else {
-        showToast(`⚠️ ${detail.slice(0, 120) || "No se pudo limpiar la imagen"}`);
+        showToast(`⚠️ ${detail.slice(0, 100) || "No se pudo limpiar la imagen"}`);
       }
     } catch {
       showToast("⚠️ No se pudo limpiar");
