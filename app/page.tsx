@@ -129,7 +129,7 @@ export default function Home() {
   const [showUpgrade, setShowUpgrade] = useState(false); // unused, kept to avoid refactor
 
   // ── Tipografía pizarra ─────────────────────────────────
-  const [useUppercase, setUseUppercase] = useState(false);
+  const [textStyle, setTextStyle] = useState<"uppercase" | "lowercase" | "italic">("lowercase");
 
   // ── Modo de la app ─────────────────────────────────────
   const [appMode, setAppMode] = useState<AppMode>(null);
@@ -1421,12 +1421,15 @@ export default function Home() {
             </div>
             <div className="pizarra-actions">
               <button className="btn-action btn-secondary" onClick={printClean}>🖨️ Imprimir limpia</button>
-              <button
-                className="btn-action btn-secondary"
-                style={{ background: useUppercase ? "var(--primary)" : undefined, color: useUppercase ? "white" : undefined, padding: "6px 12px", fontSize: 13, fontWeight: 700 }}
-                onClick={() => setUseUppercase(u => !u)}
-                title="Cambiar entre mayúsculas y minúsculas"
-              >AA {useUppercase ? "Imprenta" : "cursiva"}</button>
+              <div style={{ display: "flex", gap: 4, background: "var(--surface-2, #f0f0f0)", borderRadius: 20, padding: 3, border: "1px solid var(--border)" }}>
+                {([["uppercase","AA","MAYÚS"], ["lowercase","Aa","minús"], ["italic","Aα","cursiva"]] as const).map(([val, icon, label]) => (
+                  <button key={val}
+                    onClick={() => setTextStyle(val)}
+                    style={{ background: textStyle === val ? "var(--primary)" : "transparent", color: textStyle === val ? "white" : "var(--ink)", border: "none", borderRadius: 16, padding: "4px 10px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontStyle: val === "italic" ? "italic" : "normal", transition: "all .15s" }}
+                    title={label}
+                  >{icon}</button>
+                ))}
+              </div>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <span style={{ fontSize: 13, color: "var(--ink)", fontWeight: 600, opacity: 0.6 }}>Actividad extra:</span>
                 <button
@@ -1479,7 +1482,7 @@ export default function Home() {
                       const newText = e.currentTarget.innerText;
                       setPizarraText(newText);
                     }}
-                    style={{ outline: "none", minHeight: 40, cursor: "text", textTransform: useUppercase ? "uppercase" : "none", letterSpacing: useUppercase ? "0.04em" : "normal" }}
+                    style={{ outline: "none", minHeight: 40, cursor: "text", textTransform: textStyle === "uppercase" ? "uppercase" : textStyle === "lowercase" ? "lowercase" : "none", fontStyle: textStyle === "italic" ? "italic" : "normal", letterSpacing: textStyle === "uppercase" ? "0.04em" : "normal" }}
                     title="Hacé click para editar el texto de la pizarra"
                   />
                   <div className="audio-bar">
