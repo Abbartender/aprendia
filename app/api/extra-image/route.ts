@@ -8,7 +8,7 @@ const MODELS = [
 
 export async function POST(req: NextRequest) {
   try {
-    const { imageBase64, mimeType, subject, title, enunciado, childName, childAge, childGrade, childTheme, childThemeEmoji } = await req.json();
+    const { imageBase64, mimeType, subject, title, enunciado, extraTextBrief, childName, childAge, childGrade, childTheme, childThemeEmoji } = await req.json();
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
@@ -20,7 +20,8 @@ export async function POST(req: NextRequest) {
 
     const prompt = `Generate a COLORING PAGE (página para colorear) for a ${childAge || 8} year old child in ${gradeText}. ${themeText}
 
-Topic: "${title}" — ${subject}. Activity: ${enunciado || title}
+Activity to illustrate (reviewed by parent): "${extraTextBrief || enunciado || title}"
+Context: ${subject} — "${title}"
 
 STRICT RULES — the output image MUST be:
 ✅ PURE BLACK AND WHITE — only black outlines on white background

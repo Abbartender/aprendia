@@ -641,6 +641,7 @@ export default function Home() {
           subject: taskData.subject,
           title: taskData.title,
           enunciado: taskData.enunciado,
+          extraTextBrief: extraText, // ← texto corregido por el padre como brief
           childName: activeProfile?.name || "el niño",
           childAge: activeProfile?.age || 8,
           childGrade: activeProfile?.grade || 1,
@@ -1439,20 +1440,10 @@ export default function Home() {
                   style={{ width: 70, accentColor: "var(--primary)", cursor: "pointer" }} title="Tamaño de letra" />
                 <span style={{ fontSize: 15, color: "var(--ink)", opacity: 0.5, fontWeight: 700 }}>A</span>
               </div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <span style={{ fontSize: 13, color: "var(--ink)", fontWeight: 600, opacity: 0.6 }}>Actividad extra:</span>
-                <button
-                  className="btn-action"
-                  style={{ background: extraMode === "text" ? "var(--primary)" : "var(--surface-2, #f0f0f0)", color: extraMode === "text" ? "white" : "var(--ink)", padding: "6px 12px", fontSize: 13, border: "1px solid var(--border)" }}
-                  onClick={() => { setExtraMode("text"); setExtraImage(null); generateExtra(); }}
-                >📝 Texto</button>
-                <button
-                  className="btn-action"
-                  style={{ background: extraMode === "image" ? "var(--primary)" : "var(--surface-2, #f0f0f0)", color: extraMode === "image" ? "white" : "var(--ink)", padding: "6px 12px", fontSize: 13, border: "1px solid var(--border)" }}
-                  onClick={() => { setExtraMode("image"); setExtraText(""); generateExtraImage(); }}
-                  disabled={extraImageLoading}
-                >{extraImageLoading ? "⏳" : "🎨"} Para colorear</button>
-              </div>
+              <button
+                className="btn-action btn-secondary"
+                onClick={() => { setExtraMode("text"); setExtraImage(null); setShowExtra(true); generateExtra(); }}
+              >⭐ Actividad extra</button>
               <button className="btn-action btn-green" onClick={exportAudio} disabled={exportLoading}>
                 {exportLoading ? "⏳ Generando..." : "🎧 Exportar audio"}
               </button>
@@ -1529,30 +1520,57 @@ export default function Home() {
               {/* EXTRA */}
               {showExtra && (
                 <div className="extra-card">
-                  <h3>⭐ Actividad extra para vos</h3>
-                  {extraMode === "text" && <p>{extraText}</p>}
-                  {extraMode === "image" && (
-                    <div>
-                      {extraImageLoading && <p style={{ opacity: 0.7 }}>⏳ Generando imagen para colorear...</p>}
-                      {extraImage && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={extraImage} alt="Actividad para colorear" style={{ width: "100%", borderRadius: 12, border: "3px solid rgba(255,255,255,.3)" }} />
-                          <a
-                            href={extraImage}
-                            download="actividad-colorear.jpg"
-                            className="btn-action"
-                            style={{ background: "rgba(255,255,255,.25)", color: "white", justifyContent: "center", textDecoration: "none" }}
-                          >⬇️ Descargar para imprimir</a>
-                        </div>
-                      )}
+                  <h3>⭐ Actividad extra</h3>
+
+                  {/* PASO 1: texto generado, editable */}
+                  {extraText === "Generando actividad..." ? (
+                    <p style={{ opacity: 0.7 }}>⏳ Generando...</p>
+                  ) : (
+                    <textarea
+                      value={extraText}
+                      onChange={e => setExtraText(e.target.value)}
+                      style={{ width: "100%", minHeight: 90, padding: "10px 12px", borderRadius: 12, border: "2px solid rgba(255,255,255,.3)", background: "rgba(255,255,255,.15)", color: "white", fontSize: 14, fontFamily: "var(--font-body)", resize: "vertical", boxSizing: "border-box", lineHeight: 1.5 }}
+                      placeholder="La actividad generada aparece aquí, podés corregirla antes de generar la imagen..."
+                    />
+                  )}
+
+                  {/* PASO 2: botón para generar la imagen USANDO el texto corregido */}
+                  {extraText && extraText !== "Generando actividad..." && !extraImage && (
+                    <button
+                      className="btn-action"
+                      style={{ background: "rgba(255,255,255,.25)", color: "white", marginTop: 8, width: "100%", justifyContent: "center" }}
+                      disabled={extraImageLoading}
+                      onClick={() => {
+                        setExtraMode("image");
+                        generateExtraImage();
+                      }}
+                    >{extraImageLoading ? "⏳ Generando imagen..." : "🎨 Generar para colorear"}</button>
+                  )}
+
+                  {/* PASO 3: imagen generada */}
+                  {extraImageLoading && !extraImage && (
+                    <p style={{ opacity: 0.7, marginTop: 8 }}>⏳ Generando imagen para colorear...</p>
+                  )}
+                  {extraImage && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 10 }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={extraImage} alt="Actividad para colorear" style={{ width: "100%", borderRadius: 12, border: "3px solid rgba(255,255,255,.3)" }} />
+                      <a href={extraImage} download="actividad-colorear.jpg"
+                        className="btn-action"
+                        style={{ background: "rgba(255,255,255,.25)", color: "white", justifyContent: "center", textDecoration: "none" }}
+                      >⬇️ Descargar para imprimir</a>
+                      <button className="btn-action"
+                        style={{ background: "rgba(255,255,255,.15)", color: "white", justifyContent: "center" }}
+                        onClick={() => { setExtraImage(null); }}
+                      >↩ Volver al texto</button>
                     </div>
                   )}
+
                   <button
                     className="btn-action"
-                    style={{ background: "rgba(255,255,255,0.25)", color: "white", marginTop: 10 }}
-                    onClick={() => { setShowExtra(false); setExtraImage(null); }}
-                  >Cerrar</button>
+                    style={{ background: "rgba(255,255,255,0.15)", color: "white", marginTop: 10 }}
+                    onClick={() => { setShowExtra(false); setExtraImage(null); setExtraText(""); }}
+                  >✕ Cerrar</button>
                 </div>
               )}
             </div>
