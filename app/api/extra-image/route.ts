@@ -18,24 +18,26 @@ export async function POST(req: NextRequest) {
     const gradeText = childGrade ? `${childGrade}° grado de primaria` : "primaria";
     const themeText = childTheme ? `Le encanta el tema: ${childTheme} ${childThemeEmoji || ""}.` : "";
 
-    const prompt = `Create a personalized coloring page activity for ${childName || "a child"}, ${childAge || 8} years old, in ${gradeText}.
-${themeText}
+    const prompt = `Generate a COLORING PAGE (página para colorear) for a ${childAge || 8} year old child in ${gradeText}. ${themeText}
 
-The activity is based on a school worksheet about "${title}" (subject: ${subject}).
-Task description: ${enunciado || title}
+Topic: "${title}" — ${subject}. Activity: ${enunciado || title}
 
-Requirements for the coloring page:
-- Black and white only, thick simple outlines easy to color with crayons
-- Difficulty level appropriate for ${gradeText}
-- Same type of activity and visual structure as the original worksheet
-- If the child has a favorite theme (${childTheme || "general"}), subtly incorporate it in the decorative elements
-- Child-friendly, fun, engaging illustrations
-- Clear empty spaces to color
-- Simple title at the top mentioning the activity
-- Look like a printable school activity sheet
-- NO text answers — only visual content to color and complete
+STRICT RULES — the output image MUST be:
+✅ PURE BLACK AND WHITE — only black outlines on white background
+✅ ZERO color fills — no gray, no shading, no colored areas whatsoever
+✅ Thick, clear outlines (2-3px minimum) suitable for coloring with crayons
+✅ Large empty white areas inside the outlines for the child to color
+✅ Simple, cartoon-style line art like a printed coloring book page
+✅ A short title in Spanish at the top in outlined/hollow letters
+✅ Appropriate complexity for ${gradeText}
+${childTheme ? `✅ Include decorative elements related to ${childTheme} in the border or background outlines` : ""}
 
-Output a clean black and white coloring page, ready to print.`;
+❌ NO color fills of any kind
+❌ NO photographs or realistic images
+❌ NO gray shading or gradients
+❌ NO colored backgrounds
+
+Think: a page torn from a children's coloring book — only black lines on white paper.`;
 
     const parts: object[] = [];
 
