@@ -673,9 +673,12 @@ export default function Home() {
         body: JSON.stringify({
           childName: profile.name,
           childAge: profile.age,
+          childGrade: profile.grade,
+          childCountry: profile.country,
           themeLabel: profile.themeLabel,
           taskTitle: taskData.title,
           taskSubject: taskData.subject,
+          enunciado: taskData.enunciado || taskData.text || pizarraText,
         }),
       });
       const data = await res.json();
