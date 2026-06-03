@@ -1416,21 +1416,21 @@ export default function Home() {
             <div className="pizarra-actions">
               <button className="btn-action btn-secondary" onClick={printClean}>🖨️ Imprimir limpia</button>
               <button
-                className="btn-action"
-                style={{ background: useUppercase ? "rgba(255,255,255,.35)" : "rgba(255,255,255,.15)", color: "white", padding: "6px 12px", fontSize: 13, fontWeight: 700 }}
+                className="btn-action btn-secondary"
+                style={{ background: useUppercase ? "var(--primary)" : undefined, color: useUppercase ? "white" : undefined, padding: "6px 12px", fontSize: 13, fontWeight: 700 }}
                 onClick={() => setUseUppercase(u => !u)}
                 title="Cambiar entre mayúsculas y minúsculas"
               >AA {useUppercase ? "Imprenta" : "cursiva"}</button>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <span style={{ fontSize: 13, color: "rgba(255,255,255,.7)", fontWeight: 600 }}>Actividad extra:</span>
+                <span style={{ fontSize: 13, color: "var(--ink)", fontWeight: 600, opacity: 0.6 }}>Actividad extra:</span>
                 <button
                   className="btn-action"
-                  style={{ background: extraMode === "text" ? "rgba(255,255,255,.35)" : "rgba(255,255,255,.15)", color: "white", padding: "6px 12px", fontSize: 13 }}
+                  style={{ background: extraMode === "text" ? "var(--primary)" : "var(--surface-2, #f0f0f0)", color: extraMode === "text" ? "white" : "var(--ink)", padding: "6px 12px", fontSize: 13, border: "1px solid var(--border)" }}
                   onClick={() => { setExtraMode("text"); setExtraImage(null); generateExtra(); }}
                 >📝 Texto</button>
                 <button
                   className="btn-action"
-                  style={{ background: extraMode === "image" ? "rgba(255,255,255,.35)" : "rgba(255,255,255,.15)", color: "white", padding: "6px 12px", fontSize: 13 }}
+                  style={{ background: extraMode === "image" ? "var(--primary)" : "var(--surface-2, #f0f0f0)", color: extraMode === "image" ? "white" : "var(--ink)", padding: "6px 12px", fontSize: 13, border: "1px solid var(--border)" }}
                   onClick={() => { setExtraMode("image"); setExtraText(""); generateExtraImage(); }}
                   disabled={extraImageLoading}
                 >{extraImageLoading ? "⏳" : "🎨"} Para colorear</button>
