@@ -170,6 +170,7 @@ export default function Home() {
   const wordIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const bbTextRef = useRef<HTMLDivElement>(null);
   const cleanResultRef = useRef<HTMLDivElement>(null);
+  const wordIndexRef = useRef(0);
   const [fontSize, setFontSize] = useState(18); // tamaño letra pizarra
 
   // ── Load profiles from localStorage
@@ -545,19 +546,33 @@ export default function Home() {
     audioRef.current = audio;
 
     const totalWords = wordSpansRef.current.length;
-    let wordIndex = 0;
+    wordIndexRef.current = 0;
+
+    const moveHighlight = (newIndex: number) => {
+      const clamped = Math.max(0, Math.min(newIndex, totalWords - 1));
+      const prev = wordIndexRef.current;
+      if (prev < totalWords) {
+        wordSpansRef.current[prev].classList.remove("highlight");
+        if (clamped > prev) wordSpansRef.current[prev].classList.add("spoken");
+        else wordSpansRef.current[prev].classList.remove("spoken");
+      }
+      wordSpansRef.current[clamped].classList.add("highlight");
+      wordSpansRef.current[clamped].scrollIntoView({ behavior: "smooth", block: "nearest" });
+      wordIndexRef.current = clamped;
+    };
+
+    const handleArrowKey = (e: KeyboardEvent) => {
+      if (screen !== "pizarra") return;
+      if (e.key === "ArrowRight") { e.preventDefault(); moveHighlight(wordIndexRef.current + 1); }
+      if (e.key === "ArrowLeft")  { e.preventDefault(); moveHighlight(wordIndexRef.current - 1); }
+    };
+    window.addEventListener("keydown", handleArrowKey);
 
     audio.addEventListener("timeupdate", () => {
       const progress = audio.currentTime / (audio.duration || 1);
       const target = Math.floor(progress * totalWords);
-      if (target !== wordIndex && target < totalWords) {
-        if (wordIndex > 0) {
-          wordSpansRef.current[wordIndex - 1].classList.remove("highlight");
-          wordSpansRef.current[wordIndex - 1].classList.add("spoken");
-        }
-        wordSpansRef.current[target].classList.add("highlight");
-        wordSpansRef.current[target].scrollIntoView({ behavior: "smooth", block: "nearest" });
-        wordIndex = target;
+      if (target !== wordIndexRef.current && target < totalWords) {
+        moveHighlight(target);
         setAudioProgress(progress * 100);
       }
     });
@@ -568,6 +583,7 @@ export default function Home() {
       setAudioProgress(100);
       wordSpansRef.current.forEach((s) => s.classList.remove("highlight"));
       URL.revokeObjectURL(url);
+      window.removeEventListener("keydown", handleArrowKey);
     });
 
     audio.playbackRate = playbackRate;
