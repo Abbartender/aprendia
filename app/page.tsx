@@ -109,6 +109,7 @@ export default function Home() {
   const [extraMode, setExtraMode] = useState<"text" | "image">("text");
   const [extraImage, setExtraImage] = useState<string | null>(null);
   const [extraImageLoading, setExtraImageLoading] = useState(false);
+  const [extraPersonalized, setExtraPersonalized] = useState(true);
   const [toast, setToast] = useState("");
   const [toastVisible, setToastVisible] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -661,8 +662,8 @@ export default function Home() {
           childName: activeProfile?.name || "el niño",
           childAge: activeProfile?.age || 8,
           childGrade: activeProfile?.grade || 1,
-          childTheme: activeProfile?.themeLabel || "",
-          childThemeEmoji: activeProfile?.themeEmoji || "⭐",
+          childTheme: extraPersonalized ? (activeProfile?.themeLabel || "") : "",
+          childThemeEmoji: extraPersonalized ? (activeProfile?.themeEmoji || "⭐") : "",
         }),
       });
       if (res.ok) {
@@ -695,7 +696,7 @@ export default function Home() {
           childAge: profile.age,
           childGrade: profile.grade,
           childCountry: profile.country,
-          themeLabel: profile.themeLabel,
+          themeLabel: extraPersonalized ? profile.themeLabel : "",
           taskTitle: taskData.title,
           taskSubject: taskData.subject,
           enunciado: taskData.enunciado || taskData.text || pizarraText,
@@ -1537,6 +1538,27 @@ export default function Home() {
               {showExtra && (
                 <div className="extra-card">
                   <h3>⭐ Actividad extra</h3>
+
+                  {/* Toggle personalización */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, background: "rgba(255,255,255,.12)", borderRadius: 12, padding: "8px 12px" }}>
+                    <button
+                      onClick={() => { setExtraPersonalized(p => !p); setExtraText(""); setExtraImage(null); }}
+                      style={{ width: 36, height: 20, borderRadius: 10, border: "none", cursor: "pointer", background: extraPersonalized ? "#ffd95a" : "rgba(255,255,255,.25)", transition: "background .2s", position: "relative", flexShrink: 0 }}
+                    >
+                      <span style={{ position: "absolute", top: 2, left: extraPersonalized ? 18 : 2, width: 16, height: 16, borderRadius: "50%", background: "white", transition: "left .2s", display: "block" }} />
+                    </button>
+                    <span style={{ fontSize: 13, color: "rgba(255,255,255,.9)", lineHeight: 1.3 }}>
+                      {extraPersonalized
+                        ? `Personalizado con gustos de ${activeProfile?.name || "el niño"} (${activeProfile?.themeLabel || "tema favorito"} ${activeProfile?.themeEmoji || ""})`
+                        : "Sin personalización — actividad genérica"}
+                    </span>
+                    {!extraText || extraText === "Generando actividad..." ? null : (
+                      <button onClick={() => { setExtraText(""); setExtraImage(null); generateExtra(); }}
+                        style={{ marginLeft: "auto", background: "rgba(255,255,255,.2)", border: "none", borderRadius: 10, padding: "3px 10px", color: "white", fontSize: 12, cursor: "pointer", flexShrink: 0 }}>
+                        ↩ Regenerar
+                      </button>
+                    )}
+                  </div>
 
                   {/* PASO 1: texto generado, editable */}
                   {extraText === "Generando actividad..." ? (
