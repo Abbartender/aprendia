@@ -4,13 +4,13 @@ import { NextRequest, NextResponse } from "next/server";
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // ── PASO 1: solo extrae texto crudo de la imagen
-const EXTRACT_PROMPT = `Analizá esta imagen de tarea escolar. Puede ser una fotocopia, hoja impresa o cuaderno.
+const EXTRACT_PROMPT = `Analizá esta imagen de tarea escolar. Puede ser una fotocopia, hoja impresa o cuaderno con escritura a mano.
 Respondé SOLO con este JSON exacto, sin backticks ni texto adicional:
 {
   "subject": "materia detectada (Matemática / Lengua / Ciencias / Inglés / Música / Otra)",
-  "title": "título principal de la actividad (ej: 'Antes y Después', 'Sumas', 'Lectura comprensiva')",
+  "title": "título principal o tema de la actividad",
   "imageType": "tipo de hoja (fotocopia_oficial / cuaderno_companero / hoja_suelta / cuaderno_propio)",
-  "enunciado": "la consigna o instrucción principal de la tarea. Si no hay texto de consigna visible, describí brevemente qué tipo de actividad es y qué debe hacer el niño (ej: 'Completar los números que van antes y después del número del medio en cada fila'). NUNCA dejar vacío."
+  "enunciado": "Transcribí TODO el contenido relevante visible en la imagen: preguntas, consignas, respuestas escritas, definiciones, listas, lo que sea que aparezca escrito. Si es un cuaderno con preguntas y respuestas, incluí tanto las preguntas como las respuestas del niño. Si es una fotocopia, incluí la consigna completa. Sé exhaustivo — mejor que sobre a que falte. NUNCA resumir ni interpretar, copiar el texto tal cual aparece."
 }`;
 
 // ── PASO 2: genera script pedagógico desde el texto ya corregido por la mamá
